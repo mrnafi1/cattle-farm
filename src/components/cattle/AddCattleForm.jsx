@@ -50,7 +50,7 @@ export default function AddCattleForm({ onClose }) {
 
     try {
       // ২. ব্যাকএন্ড এপিআই-তে POST রিকোয়েস্ট পাঠানো
-      const response = await fetch("http://localhost:5000/cattles", {
+      const response = await fetch("https://cattle-farm-server.onrender.com/cattles", {
         method: "POST",
         headers: {
           "content-type": "application/json",

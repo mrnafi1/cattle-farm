@@ -14,7 +14,7 @@ export function AuthProvider({ children }) {
   // ১. ডাটাবেস থেকে রিয়েল ইউজার ডেটা আনা
   const fetchUsers = async () => {
     try {
-      const res = await fetch("http://localhost:5000/users");
+      const res = await fetch("https://cattle-farm-server.onrender.com/users");
       const data = await res.json();
 
       // যদি ডাটাবেস একদম খালি থাকে, তবে ডিফল্ট অ্যাডমিন তৈরি করা
@@ -29,7 +29,7 @@ export function AuthProvider({ children }) {
           active: true,
           createdAt: new Date().toISOString().slice(0, 10),
         };
-        const postRes = await fetch("http://localhost:5000/users", {
+        const postRes = await fetch("https://cattle-farm-server.onrender.com/users", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(defaultAdmin)
@@ -95,7 +95,7 @@ export function AuthProvider({ children }) {
     };
 
     try {
-      await fetch("http://localhost:5000/users", {
+      await fetch("https://cattle-farm-server.onrender.com/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newUser)
@@ -111,7 +111,7 @@ export function AuthProvider({ children }) {
  // আপডেট (এখন সরাসরি ডাটাবেসে PUT এপিআই দিয়ে আপডেট হবে)
   const updateUser = async (id, data) => {
     try {
-      const res = await fetch(`http://localhost:5000/users/${id}`, {
+      const res = await fetch(`https://cattle-farm-server.onrender.com/users/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data)
@@ -137,7 +137,7 @@ export function AuthProvider({ children }) {
   const deleteUser = async (id) => {
     if (currentUser?._id === id || currentUser?.id === id) return { ok: false, msg: "নিজেকে মুছতে পারবেন না" };
     try {
-      await fetch(`http://localhost:5000/users/${id}`, { method: "DELETE" });
+      await fetch(`https://cattle-farm-server.onrender.com/users/${id}`, { method: "DELETE" });
       fetchUsers();
       return { ok: true };
     } catch (error) {

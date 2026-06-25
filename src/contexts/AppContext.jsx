@@ -3,7 +3,6 @@ import { mockMilkLogs, mockExpenses, mockIncomes } from "../data/mockData";
 
 const AppContext = createContext();
 
-// Safe localStorage helpers
 function lsGet(key, fallback) {
   try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
   catch { return fallback; }
@@ -14,41 +13,40 @@ function lsSet(key, value) {
 }
 
 export function AppProvider({ children }) {
-  // গরুর ডেটা এখন আর লোকাল স্টোরেজ থেকে আসবে না, শুরুতে ফাঁকা থাকবে
-  const [cattle,   setCattle]   = useState([]); 
+  const [cattle,   setCattle]   = useState([]);
   const [milkLogs, setMilkLogs] = useState(() => lsGet("sgf_milk",     mockMilkLogs));
   const [expenses, setExpenses] = useState(() => lsGet("sgf_expenses", mockExpenses));
   const [incomes,  setIncomes]  = useState(() => lsGet("sgf_incomes",  mockIncomes));
+  const [sales,    setSales]    = useState(() => lsGet("sgf_sales",    []));
   const [isOnline, setIsOnline] = useState(() => navigator.onLine);
   const [toasts,   setToasts]   = useState([]);
 
-  // ১. মঙ্গোডিবি ডাটাবেস থেকে রিয়েল ডেটা আনার ফাংশন
   const fetchRealCattleData = async () => {
     try {
-      const response = await fetch("http://localhost:5000/cattles");
+      const response = await fetch("https://cattle-farm-server.onrender.com/cattles");
       const data = await response.json();
-      setCattle(data); // ডাটাবেস থেকে ডেটা এসে স্টেটে জমা হবে
+      setCattle(data);
     } catch (error) {
       console.error("ডাটাবেস থেকে ডেটা আনতে সমস্যা:", error);
     }
   };
 
-  // পেজ লোড হলে একবার ডাটাবেস থেকে সব গরুর তালিকা আনবে
-  useEffect(() => { 
-    fetchRealCattleData(); 
-  }, []);
+  useEffect(() => { fetchRealCattleData(); }, []);
 
-  // অন্যান্য বিষয়ের জন্য লোকাল স্টোরেজ আপডেট
   useEffect(() => { lsSet("sgf_milk",     milkLogs); }, [milkLogs]);
   useEffect(() => { lsSet("sgf_expenses", expenses); }, [expenses]);
   useEffect(() => { lsSet("sgf_incomes",  incomes);  }, [incomes]);
+  useEffect(() => { lsSet("sgf_sales",    sales);    }, [sales]);
 
   useEffect(() => {
     const up   = () => setIsOnline(true);
     const down = () => setIsOnline(false);
     window.addEventListener("online",  up);
     window.addEventListener("offline", down);
-    return () => { window.removeEventListener("online", up); window.removeEventListener("offline", down); };
+    return () => {
+      window.removeEventListener("online", up);
+      window.removeEventListener("offline", down);
+    };
   }, []);
 
   // ── Toast ─────────────────────────────────────────────────────
@@ -59,9 +57,8 @@ export function AppProvider({ children }) {
   }, []);
   const removeToast = useCallback((id) => setToasts((p) => p.filter((t) => t.id !== id)), []);
 
-  // ── Cattle CRUD (রিয়েল ডাটাবেসের সাথে কানেক্টেড) ───────────────────────────────────────────────
+  // ── Cattle CRUD ───────────────────────────────────────────────
   const addCattle = () => {
-    // ফর্ম থেকে ডেটা ডাটাবেসে সেভ হওয়ার পর এই ফাংশনটি কল করে লিস্ট আপডেট করা যাবে
     fetchRealCattleData();
   };
 
@@ -70,20 +67,16 @@ export function AppProvider({ children }) {
     addToast("গরুর তথ্য আপডেট হয়েছে ✓");
   };
 
-  // এটিই ডাইনামিক কাজ করবে!
   const deleteCattle = async (id) => {
     try {
-      // ১. ডাটাবেস থেকে ডিলিট রিকোয়েস্ট পাঠানো
-      const res = await fetch(`http://localhost:5000/cattles/${id}`, { method: "DELETE" });
+      const res = await fetch(`https://cattle-farm-server.onrender.com/cattles/${id}`, { method: "DELETE" });
       const data = await res.json();
-      
-      if(data.deletedCount > 0) {
-        // ২. ডাটাবেসে ডিলিট হলে সাথে সাথে লোকাল স্টেট থেকেও মুছে ফেলা (c.id এর বদলে c._id)
+      if (data.deletedCount > 0) {
         setCattle((prev) => prev.filter((c) => c._id !== id));
         addToast("গরু মুছে ফেলা হয়েছে", "error");
       }
     } catch (error) {
-      addToast("মুছে ফেলা সম্ভব হয়নি", "error");
+      addToast("মুছে ফেলা সম্ভব হয়নি", "error");
     }
   };
 
@@ -129,18 +122,73 @@ export function AppProvider({ children }) {
     addToast("আয়ের এন্ট্রি মুছে ফেলা হয়েছে", "error");
   };
 
-  // ── Stats (computed) ──────────────────────────────────────────
+  // ── Sales CRUD ────────────────────────────────────────────────
+  const sellCattle = async (cattleId, saleData) => {
+    const cow = cattle.find((c) => c._id === cattleId);
+    if (!cow) return;
+
+    const record = {
+      id:            Date.now().toString(),
+      cattleId:      cow._id,
+      tagId:         cow.tagId,
+      cattleName:    cow.name,
+      breed:         cow.breed,
+      type:          cow.type,
+      purchasePrice: cow.purchasePrice || 0,
+      photo:         cow.photo || null,
+      ...saleData,
+      salePrice:     Number(saleData.salePrice),
+      profit:        Number(saleData.salePrice) - (cow.purchasePrice || 0),
+    };
+
+    setSales((p) => [record, ...p]);
+
+    try {
+      await fetch(`https://cattle-farm-server.onrender.com/cattles/${cattleId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "sold", saleDate: saleData.saleDate }),
+      });
+    } catch (e) {
+      console.error("Status update failed", e);
+    }
+
+    setCattle((p) => p.map((c) =>
+      c._id === cattleId
+        ? { ...c, status: "sold", saleDate: saleData.saleDate }
+        : c
+    ));
+
+    addIncome({
+      date:        saleData.saleDate,
+      source:      "cattle_sale",
+      amount:      Number(saleData.salePrice),
+      description: `${cow.tagId} বিক্রয় — ${saleData.buyerName || "ক্রেতা"}`,
+    });
+
+    addToast(`${cow.tagId} সফলভাবে বিক্রি হয়েছে ✓`);
+    return record;
+  };
+
+  const deleteSale = (id) => {
+    setSales((p) => p.filter((s) => s.id !== id));
+    addToast("বিক্রির রেকর্ড মুছে ফেলা হয়েছে", "error");
+  };
+
+  // ── Stats ─────────────────────────────────────────────────────
   const stats = {
-    // এখন cattle ডাটাবেস থেকে আসছে, তাই ডিলিট করলে এটি ডাইনামিকালি কমে যাবে বা ০ হবে
-    totalCattle:    cattle.length, 
+    totalCattle:    cattle.filter((c) => c.status !== "sold").length,
     healthyCattle:  cattle.filter((c) => c.status === "healthy").length,
     sickCattle:     cattle.filter((c) => c.status === "sick").length,
     forSaleCattle:  cattle.filter((c) => c.status === "forSale").length,
+    soldCattle:     cattle.filter((c) => c.status === "sold").length,
     todayMilk:      milkLogs[0]?.produced || 0,
     monthlyIncome:  incomes.reduce((s, i) => s + (i.amount || 0), 0),
     monthlyExpense: expenses.reduce((s, e) => s + (e.amount || 0), 0),
+    totalSaleProfit: sales.reduce((s, r) => s + (r.profit || 0), 0),
     get netProfit() { return this.monthlyIncome - this.monthlyExpense; },
     upcomingVaccines: cattle
+      .filter((c) => c.status !== "sold")
       .flatMap((c) =>
         (c.vaccineHistory || []).map((v) => ({
           cattleTag: c.tagId, cattleName: c.name, ...v,
@@ -155,11 +203,12 @@ export function AppProvider({ children }) {
 
   return (
     <AppContext.Provider value={{
-      cattle, milkLogs, expenses, incomes,
+      cattle, milkLogs, expenses, incomes, sales,
       addCattle, updateCattle, deleteCattle, fetchRealCattleData,
       addMilkLog, updateMilkLog, deleteMilkLog,
       addExpense, updateExpense, deleteExpense,
       addIncome,  updateIncome,  deleteIncome,
+      sellCattle, deleteSale,
       stats, toasts, addToast, removeToast, isOnline,
     }}>
       {children}
