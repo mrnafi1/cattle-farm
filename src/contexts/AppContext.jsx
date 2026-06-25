@@ -62,9 +62,24 @@ export function AppProvider({ children }) {
     fetchRealCattleData();
   };
 
-  const updateCattle = (id, data) => {
-    setCattle((p) => p.map((c) => c._id === id ? { ...c, ...data } : c));
-    addToast("গরুর তথ্য আপডেট হয়েছে ✓");
+  const updateCattle = async (id, data) => {
+    try {
+      // ১. ডাটাবেসে (Render) তথ্য পাঠানো
+      const res = await fetch(`https://cattle-farm-server.onrender.com/cattles/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      if (res.ok) {
+        // ২. ডাটাবেসে সেভ হলে ড্যাশবোর্ডের স্ক্রিন (স্টেট) আপডেট করা
+        setCattle((p) => p.map((c) => (c._id === id || c.id === id) ? { ...c, ...data } : c));
+        // addToast("তথ্য আপডেট হয়েছে ✓"); // এখানে টোস্ট দিলে ডাবল টোস্ট হতে পারে, তাই বন্ধ রাখলাম।
+      }
+    } catch (error) {
+      console.error("আপডেট এরর:", error);
+      addToast("আপডেট করা সম্ভব হয়নি", "error");
+    }
   };
 
   const deleteCattle = async (id) => {

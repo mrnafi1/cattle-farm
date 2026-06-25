@@ -38,7 +38,7 @@ export default function CattleProfile({ cattle, onEdit }) {
     setShowVacForm(true);
   };
 
-  const handleSaveVac = () => {
+  const handleSaveVac = async () => {
     if (!vacForm.name || !vacForm.date || !vacForm.nextDue) {
       addToast("সব তথ্য পূরণ করুন", "error");
       return;
@@ -49,16 +49,20 @@ export default function CattleProfile({ cattle, onEdit }) {
     } else {
       list.push(vacForm);
     }
-    updateCattle(cattle.id, { vaccineHistory: list });
-    cattle.vaccineHistory = list;
+    
+    // cattle.id এর বদলে cattle._id ব্যবহার করা হলো
+    const cattleId = cattle._id || cattle.id; 
+    await updateCattle(cattleId, { vaccineHistory: list });
+    
     setShowVacForm(false);
     addToast(editingIdx !== null ? "টিকার তথ্য আপডেট হয়েছে ✓" : "নতুন টিকা যুক্ত হয়েছে ✓");
   };
 
-  const handleDeleteVac = (idx) => {
+  const handleDeleteVac = async (idx) => {
     const list = (cattle.vaccineHistory || []).filter((_, i) => i !== idx);
-    updateCattle(cattle.id, { vaccineHistory: list });
-    cattle.vaccineHistory = list;
+    const cattleId = cattle._id || cattle.id;
+    await updateCattle(cattleId, { vaccineHistory: list });
+    
     setDeleteIdx(null);
     addToast("টিকার রেকর্ড মুছে ফেলা হয়েছে", "error");
   };
