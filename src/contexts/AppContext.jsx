@@ -146,7 +146,7 @@ export function AppProvider({ children }) {
     } catch (e) { addToast("বিক্রি সম্পন্ন করতে সমস্যা হয়েছে", "error"); }
   };
 
-  // ── Death Logic (নতুন) ──
+  // ── Death Logic ──
   const markCattleDead = async (cattleId, deathData) => {
     const cow = cattle.find((c) => c._id === cattleId);
     if (!cow) return;
@@ -166,12 +166,38 @@ export function AppProvider({ children }) {
     } catch (e) { addToast("আপডেট করতে সমস্যা হয়েছে", "error"); }
   };
 
+  // ── Stats (মিসিং অংশটুকু যোগ করা হলো) ──
+  const stats = {
+    totalCattle:    cattle.filter((c) => c.status !== "sold" && c.status !== "dead").length,
+    healthyCattle:  cattle.filter((c) => c.status === "healthy").length,
+    sickCattle:     cattle.filter((c) => c.status === "sick").length,
+    forSaleCattle:  cattle.filter((c) => c.status === "forSale").length,
+    soldCattle:     cattle.filter((c) => c.status === "sold").length,
+    todayMilk:      milkLogs[0]?.produced || 0,
+    monthlyIncome:  incomes.reduce((s, i) => s + (i.amount || 0), 0),
+    monthlyExpense: expenses.reduce((s, e) => s + (e.amount || 0), 0),
+    totalSaleProfit: sales.reduce((s, r) => s + (r.profit || 0), 0),
+    get netProfit() { return this.monthlyIncome - this.monthlyExpense; },
+    upcomingVaccines: cattle
+      .filter((c) => c.status !== "sold" && c.status !== "dead")
+      .flatMap((c) =>
+        (c.vaccineHistory || []).map((v) => ({
+          cattleTag: c.tagId, cattleName: c.name, ...v,
+        }))
+      )
+      .filter((v) => {
+        const diff = (new Date(v.nextDue) - new Date()) / 864e5;
+        return diff >= 0 && diff <= 30;
+      })
+      .sort((a, b) => new Date(a.nextDue) - new Date(b.nextDue)),
+  };
+
   return (
     <AppContext.Provider value={{
       cattle, milkLogs, expenses, incomes, sales,
       updateCattle, deleteCattle, fetchRealCattleData, fetchAllData,
       addExpense, addIncome, sellCattle, markCattleDead,
-      toasts, addToast, removeToast, isOnline,
+      stats, toasts, addToast, removeToast, isOnline,
     }}>
       {children}
     </AppContext.Provider>
