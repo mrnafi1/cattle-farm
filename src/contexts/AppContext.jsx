@@ -86,6 +86,53 @@ export function AppProvider({ children }) {
     }
   };
 
+  // ── Milk Logs CRUD (নতুন যুক্ত করা হলো) ──
+  const addMilkLog = async (data) => {
+    try {
+      const res = await fetch("https://cattle-farm-server.onrender.com/milk_logs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const newLog = await res.json();
+      // নতুন ডেটা সবার উপরে দেখানোর জন্য
+      setMilkLogs((p) => [{ ...data, _id: newLog.insertedId }, ...p]);
+      addToast("দুধের হিসাব সংরক্ষিত হয়েছে ✓");
+    } catch (error) {
+      console.error(error);
+      addToast("সংরক্ষণ করতে সমস্যা হয়েছে", "error");
+    }
+  };
+
+  const updateMilkLog = async (id, data) => {
+    try {
+      const res = await fetch(`https://cattle-farm-server.onrender.com/milk_logs/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        setMilkLogs((p) => p.map((l) => (l._id === id || l.id === id) ? { ...l, ...data } : l));
+        addToast("দুধের হিসাব আপডেট হয়েছে ✓");
+      }
+    } catch (error) {
+      addToast("আপডেট করা সম্ভব হয়নি", "error");
+    }
+  };
+
+  const deleteMilkLog = async (id) => {
+    try {
+      const res = await fetch(`https://cattle-farm-server.onrender.com/milk_logs/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.deletedCount > 0) {
+        setMilkLogs((prev) => prev.filter((l) => l._id !== id && l.id !== id));
+        addToast("এন্ট্রি মুছে ফেলা হয়েছে", "error");
+      }
+    } catch (error) {
+      addToast("মুছে ফেলা সম্ভব হয়নি", "error");
+    }
+  };
+
   // ── Expense CRUD ──
   const addExpense = async (data) => {
     try {
@@ -166,7 +213,7 @@ export function AppProvider({ children }) {
     } catch (e) { addToast("আপডেট করতে সমস্যা হয়েছে", "error"); }
   };
 
-  // ── Stats (মিসিং অংশটুকু যোগ করা হলো) ──
+  // ── Stats ──
   const stats = {
     totalCattle:    cattle.filter((c) => c.status !== "sold" && c.status !== "dead").length,
     healthyCattle:  cattle.filter((c) => c.status === "healthy").length,
@@ -196,6 +243,7 @@ export function AppProvider({ children }) {
     <AppContext.Provider value={{
       cattle, milkLogs, expenses, incomes, sales,
       updateCattle, deleteCattle, fetchRealCattleData, fetchAllData,
+      addMilkLog, updateMilkLog, deleteMilkLog, // <-- নতুন ফাংশনগুলো এখানে এক্সপোর্ট করা হলো
       addExpense, addIncome, sellCattle, markCattleDead,
       stats, toasts, addToast, removeToast, isOnline,
     }}>
