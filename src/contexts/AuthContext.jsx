@@ -6,12 +6,17 @@ const AuthContext = createContext();
 const HIERARCHY = { admin: 3, worker: 2, shareholder: 1 };
 
 export function AuthProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(null);
+  // ১. পরিবর্তন: অ্যাপ লোড হওয়ার সময় লোকাল স্টোরেজ চেক করা
+  const [currentUser, setCurrentUser] = useState(() => {
+    const savedUser = localStorage.getItem("cattleFarmUser");
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+  
   const [authError, setAuthError] = useState("");
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // ১. ডাটাবেস থেকে রিয়েল ইউজার ডেটা আনা
+  // ডাটাবেস থেকে রিয়েল ইউজার ডেটা আনা
   const fetchUsers = async () => {
     try {
       const res = await fetch("https://cattle-farm-server.onrender.com/users");
@@ -22,8 +27,8 @@ export function AuthProvider({ children }) {
         const defaultAdmin = {
           name: "Admin",
           role: "admin",
-          email: "admin@farm.com", // নতুন অ্যাডমিনের ইমেইল
-          password: "admin",       // নতুন অ্যাডমিনের পাসওয়ার্ড
+          email: "admin@farm.com",
+          password: "admin",
           phone: "01700000000",
           pin: "1234",
           active: true,
@@ -51,23 +56,22 @@ export function AuthProvider({ children }) {
   }, []);
 
   // ── Auth ──────────────────────────────────────────────────────
-  // লগইন ফাংশন (নতুন লজিক: অ্যাডমিন = ইমেইল+পাসওয়ার্ড, স্টাফ = ফোন+পিন)
+  // লগইন ফাংশন 
   const login = (credentials, type = "old") => {
     let user;
 
     if (type === "admin") {
-      // নতুন অ্যাডমিন লগইন লজিক
       user = users.find(u => u.role === "admin" && u.email === credentials.email && u.password === credentials.password && u.active !== false);
     } else if (type === "staff") {
-      // নতুন স্টাফ/শেয়ারহোল্ডার লগইন লজিক
       user = users.find(u => (u.role === "worker" || u.role === "shareholder") && u.phone === credentials.phone && u.pin === credentials.pin && u.active !== false);
     } else {
-      // পুরোনো লজিক (নাম এবং পিন দিয়ে) - যাতে আপনার বর্তমান কোড ক্র্যাশ না করে!
       user = users.find(u => u.name.trim() === credentials.trim() && arguments[1] === u.pin && u.active !== false);
     }
 
     if (user) {
       setCurrentUser(user);
+      // ২. পরিবর্তন: লগইন সফল হলে ইউজারের তথ্য লোকাল স্টোরেজে সেভ করা
+      localStorage.setItem("cattleFarmUser", JSON.stringify(user));
       setAuthError("");
       return true;
     }
@@ -76,7 +80,11 @@ export function AuthProvider({ children }) {
     return false;
   };
 
-  const logout = () => setCurrentUser(null);
+  // ৩. পরিবর্তন: লগআউট করলে লোকাল স্টোরেজ থেকে ডাটা মুছে ফেলা
+  const logout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem("cattleFarmUser");
+  };
 
   const hasAccess = (required) => {
     if (!currentUser) return false;
@@ -100,15 +108,13 @@ export function AuthProvider({ children }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newUser)
       });
-      fetchUsers(); // নতুন ইউজার যুক্ত হওয়ার পর রিফ্রেশ
+      fetchUsers(); 
       return { ok: true };
     } catch (error) {
       return { ok: false, msg: "সার্ভার এরর" };
     }
   };
 
-  
- // আপডেট (এখন সরাসরি ডাটাবেসে PUT এপিআই দিয়ে আপডেট হবে)
   const updateUser = async (id, data) => {
     try {
       const res = await fetch(`https://cattle-farm-server.onrender.com/users/${id}`, {
@@ -118,22 +124,25 @@ export function AuthProvider({ children }) {
       });
       
       if (res.ok) {
-        fetchUsers(); // ডাটাবেস থেকে একদম ফ্রেশ ডেটা রিলোড করা
+        fetchUsers(); 
         
-        // যদি বর্তমানে লগইন থাকা অ্যাডমিনের নিজের তথ্য আপডেট হয়, তবে কারেন্ট ইউজার স্টেটও বদলে যাবে
+        // ৪. পরিবর্তন: যদি নিজের প্রোফাইল আপডেট হয়, তবে লোকাল স্টোরেজও আপডেট করা
         if (currentUser?._id === id || currentUser?.id === id) {
-          setCurrentUser((prev) => ({ ...prev, ...data }));
+          setCurrentUser((prev) => {
+            const updatedUser = { ...prev, ...data };
+            localStorage.setItem("cattleFarmUser", JSON.stringify(updatedUser));
+            return updatedUser;
+          });
         }
         return { ok: true };
       }
-      return { ok: false, msg: "আপডেট সফল হয়নি" };
+      return { ok: false, msg: "আপডেট সফল হয়নি" };
     } catch (error) {
       console.error("আপডেট করতে সমস্যা:", error);
       return { ok: false, msg: "সার্ভার এরর" };
     }
   };
 
-  // ডিলিট এখন সরাসরি ডাটাবেস থেকে হবে
   const deleteUser = async (id) => {
     if (currentUser?._id === id || currentUser?.id === id) return { ok: false, msg: "নিজেকে মুছতে পারবেন না" };
     try {
@@ -141,7 +150,7 @@ export function AuthProvider({ children }) {
       fetchUsers();
       return { ok: true };
     } catch (error) {
-      return { ok: false, msg: "ডিলিট করা যায়নি" };
+      return { ok: false, msg: "ডিলিট করা যায়নি" };
     }
   };
 
