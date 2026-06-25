@@ -44,7 +44,7 @@ export default function EditCattleForm({ cattle, onClose }) {
 
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
 
-  // Photo upload → base64 (stored locally, no server needed)
+  // Photo upload → base64
   const handlePhoto = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -60,7 +60,8 @@ export default function EditCattleForm({ cattle, onClose }) {
     reader.readAsDataURL(file);
   };
 
-  const handleSave = () => {
+  // এখানে async যুক্ত করা হয়েছে
+  const handleSave = async () => {
     const updated = {
       ...form,
       age:           Number(form.age),
@@ -77,7 +78,11 @@ export default function EditCattleForm({ cattle, onClose }) {
       ];
     }
 
-    updateCattle(cattle.id, updated);
+    // cattle.id এর বদলে cattle._id ব্যবহার করা হলো এবং await যুক্ত করা হলো
+    const cattleId = cattle._id || cattle.id;
+    await updateCattle(cattleId, updated);
+    
+    // ডাটা সফলভাবে সার্ভারে যাওয়ার পর ফর্মটি বন্ধ হবে
     onClose();
   };
 
