@@ -11,6 +11,7 @@ import AddCattleForm from "./AddCattleForm";
 import EditCattleForm from "./EditCattleForm";
 
 export default function CattleList() {
+  // deleteCattle ফাংশনটি AppContext থেকে রিসিভ করা হয়েছে
   const { cattle, deleteCattle, fetchRealCattleData, sellCattle, markCattleDead } = useApp(); 
   const { t } = useLanguage();
   const { hasAccess } = useAuth();
@@ -23,9 +24,8 @@ export default function CattleList() {
   const [selectedCattle, setSelectedCattle] = useState(null);
   const [editingCattle, setEditingCattle] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState(null);
   
-  // নতুন স্টেটস
+  const [deleteTarget, setDeleteTarget] = useState(null); // ডিলিট করার স্টেট
   const [sellTarget, setSellTarget] = useState(null);
   const [deadTarget, setDeadTarget] = useState(null);
 
@@ -131,13 +131,21 @@ export default function CattleList() {
                     </td>
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-1">
-                        <button onClick={() => setSelectedCattle(c)} className="px-2 py-1 rounded text-xs text-slate-300 hover:bg-slate-600/50">👁</button>
+                        {/* ভিউ বাটন */}
+                        <button onClick={() => setSelectedCattle(c)} className="px-2 py-1 rounded text-xs text-slate-300 hover:bg-slate-600/50" title="বিস্তারিত দেখুন">👁</button>
+                        
                         {canEdit && c.status !== "sold" && c.status !== "dead" && (
                           <>
-                            <button onClick={() => setEditingCattle(c)} className="px-2 py-1 rounded text-xs text-sky-400 hover:bg-sky-400/10">✏️</button>
+                            {/* এডিট বাটন */}
+                            <button onClick={() => setEditingCattle(c)} className="px-2 py-1 rounded text-xs text-sky-400 hover:bg-sky-400/10" title="এডিট করুন">✏️</button>
                             <button onClick={() => setSellTarget(c)} className="px-2 py-1 rounded text-xs text-emerald-400 hover:bg-emerald-400/10" title="বিক্রি করুন">🏷️</button>
                             <button onClick={() => setDeadTarget(c)} className="px-2 py-1 rounded text-xs text-red-400 hover:bg-red-400/10" title="মৃত মার্ক করুন">☠️</button>
                           </>
+                        )}
+                        
+                        {/* ── নতুন ডিলিট বাটন (শুধুমাত্র অ্যাডমিনদের জন্য) ── */}
+                        {canDelete && (
+                          <button onClick={() => setDeleteTarget(c)} className="px-2 py-1 rounded text-xs text-red-400 hover:bg-red-400/10" title="একেবারে মুছে ফেলুন">🗑️</button>
                         )}
                       </div>
                     </td>
@@ -161,7 +169,7 @@ export default function CattleList() {
             <input name="buyerName" required className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400" />
           </div>
           <div>
-            <label className="text-slate-400 text-xs block mb-1">বিক্রয় মূল্য (৳)</label>
+            <label className="text-slate-400 text-xs block mb-1">বিক্রয় মূল্য (৳)</label>
             <input type="number" name="salePrice" required className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400" />
           </div>
           <div>
@@ -200,13 +208,26 @@ export default function CattleList() {
         </form>
       </Modal>
 
-      {/* অন্যান্য মোডালগুলো (Profile, Edit, Delete) অপরিবর্তিত আছে */}
+      {/* ── Confirm Delete Dialog ── */}
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        message={`আপনি কি নিশ্চিত যে "${deleteTarget?.tagId} - ${deleteTarget?.name}" কে ফার্ম থেকে পুরোপুরি মুছে ফেলতে চান?`}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          deleteCattle(deleteTarget._id || deleteTarget.id);
+          setDeleteTarget(null);
+        }}
+      />
+
+      {/* অন্যান্য মোডালগুলো (Profile, Edit, Add) */}
       <Modal isOpen={!!selectedCattle} onClose={() => setSelectedCattle(null)} title={`${selectedCattle?.tagId}`} size="lg">
         {selectedCattle && <CattleProfile cattle={selectedCattle} onEdit={() => { setEditingCattle(selectedCattle); setSelectedCattle(null); }} />}
       </Modal>
+
       <Modal isOpen={!!editingCattle} onClose={() => setEditingCattle(null)} title="এডিট করুন" size="md">
         {editingCattle && <EditCattleForm cattle={editingCattle} onClose={() => { setEditingCattle(null); fetchRealCattleData(); }} />}
       </Modal>
+
       <Modal isOpen={showAddForm} onClose={() => setShowAddForm(false)} title={t("addCattle")} size="md">
         <AddCattleForm onClose={() => { setShowAddForm(false); fetchRealCattleData(); }} />
       </Modal>
