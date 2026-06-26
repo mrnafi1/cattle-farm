@@ -20,11 +20,12 @@ const EMPTY_EXP = { date: new Date().toISOString().slice(0, 10), category: "feed
 const EMPTY_INC = { date: new Date().toISOString().slice(0, 10), source: "milk", amount: "", description: "" };
 
 export default function ExpenseTracker() {
+  // নতুন ফাংশনগুলো রিসিভ করা হলো
   const { expenses, incomes, addExpense, updateExpense, deleteExpense, addIncome, updateIncome, deleteIncome, stats } = useApp();
   const { t } = useLanguage();
   const { hasAccess } = useAuth();
 
-  const [tab, setTab] = useState("expense"); // "expense" | "income"
+  const [tab, setTab] = useState("expense"); 
 
   const [showExpForm, setShowExpForm] = useState(false);
   const [editExp,     setEditExp]     = useState(null);
@@ -44,17 +45,20 @@ export default function ExpenseTracker() {
 
   const openEditExp = (e) => { setEditExp(e); setExpForm({ date: e.date, category: e.category, amount: e.amount, description: e.description }); };
   const openEditInc = (i) => { setEditInc(i); setIncForm({ date: i.date, source: i.source, amount: i.amount, description: i.description }); };
+  
   const closeExp = () => { setShowExpForm(false); setEditExp(null); setExpForm(EMPTY_EXP); };
   const closeInc = () => { setShowIncForm(false); setEditInc(null); setIncForm(EMPTY_INC); };
 
+  // MongoDB এর জন্য _id ব্যবহার করা হলো
   const saveExp = () => {
     const d = { ...expForm, amount: Number(expForm.amount) };
-    editExp ? updateExpense(editExp.id, d) : addExpense(d);
+    editExp ? updateExpense(editExp._id || editExp.id, d) : addExpense(d);
     closeExp();
   };
+  
   const saveInc = () => {
     const d = { ...incForm, amount: Number(incForm.amount) };
-    editInc ? updateIncome(editInc.id, d) : addIncome(d);
+    editInc ? updateIncome(editInc._id || editInc.id, d) : addIncome(d);
     closeInc();
   };
 
@@ -114,7 +118,7 @@ export default function ExpenseTracker() {
               </thead>
               <tbody className="divide-y divide-slate-700/30">
                 {expenses.map((e) => (
-                  <tr key={e.id} className="hover:bg-slate-700/20 transition-colors">
+                  <tr key={e._id || e.id} className="hover:bg-slate-700/20 transition-colors">
                     <td className="px-4 py-3 text-slate-400 text-sm">{e.date}</td>
                     <td className="px-4 py-3">
                       <span className="flex items-center gap-1.5 text-sm text-slate-300">
@@ -151,7 +155,7 @@ export default function ExpenseTracker() {
               </thead>
               <tbody className="divide-y divide-slate-700/30">
                 {incomes.map((i) => (
-                  <tr key={i.id} className="hover:bg-slate-700/20 transition-colors">
+                  <tr key={i._id || i.id} className="hover:bg-slate-700/20 transition-colors">
                     <td className="px-4 py-3 text-slate-400 text-sm">{i.date}</td>
                     <td className="px-4 py-3 text-slate-300 text-sm">💰 {i.source}</td>
                     <td className="px-4 py-3 text-slate-300 text-sm max-w-[160px] truncate">{i.description}</td>
@@ -205,9 +209,9 @@ export default function ExpenseTracker() {
 
       {/* Confirm Dialogs */}
       <ConfirmDialog isOpen={!!deleteExp} message={`"${deleteExp?.description}" খরচটি মুছে ফেলবেন?`}
-        onCancel={() => setDeleteExp(null)} onConfirm={() => { deleteExpense(deleteExp.id); setDeleteExp(null); }} />
+        onCancel={() => setDeleteExp(null)} onConfirm={() => { deleteExpense(deleteExp._id || deleteExp.id); setDeleteExp(null); }} />
       <ConfirmDialog isOpen={!!deleteInc} message={`"${deleteInc?.description}" আয়টি মুছে ফেলবেন?`}
-        onCancel={() => setDeleteInc(null)} onConfirm={() => { deleteIncome(deleteInc.id); setDeleteInc(null); }} />
+        onCancel={() => setDeleteInc(null)} onConfirm={() => { deleteIncome(deleteInc._id || deleteInc.id); setDeleteInc(null); }} />
     </div>
   );
 }
