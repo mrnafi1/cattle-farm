@@ -8,18 +8,14 @@ export function AppProvider({ children }) {
   const [expenses, setExpenses] = useState([]);
   const [incomes,  setIncomes]  = useState([]);
   const [sales,    setSales]    = useState([]);
-  
-  // ── নতুন যুক্ত করা স্টেট (Inventory & Feed) ──
   const [inventory, setInventory] = useState([]);
   const [feedLogs,  setFeedLogs]  = useState([]);
   
   const [isOnline, setIsOnline] = useState(() => navigator.onLine);
   const [toasts,   setToasts]   = useState([]);
 
-  // ── ডাটাবেস থেকে সব ডাটা আনার ফাংশন ──
   const fetchAllData = async () => {
     try {
-      // এখানে inventory এবং feed_logs এর API লিংক যুক্ত করা হয়েছে
       const urls = ["cattles", "milk_logs", "expenses", "incomes", "sales", "inventory", "feed_logs"];
       const [catRes, milkRes, expRes, incRes, saleRes, invRes, feedRes] = await Promise.all(
         urls.map(url => fetch(`https://cattle-farm-server.onrender.com/${url}`))
@@ -57,7 +53,6 @@ export function AppProvider({ children }) {
     };
   }, []);
 
-  // ── Toast ──
   const addToast = useCallback((message, type = "success") => {
     const id = Date.now();
     setToasts((p) => [...p, { id, message, type }]);
@@ -73,12 +68,8 @@ export function AppProvider({ children }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      if (res.ok) {
-        setCattle((p) => p.map((c) => (c._id === id || c.id === id) ? { ...c, ...data } : c));
-      }
-    } catch (error) {
-      addToast("আপডেট করা সম্ভব হয়নি", "error");
-    }
+      if (res.ok) setCattle((p) => p.map((c) => (c._id === id || c.id === id) ? { ...c, ...data } : c));
+    } catch (error) { addToast("আপডেট করা সম্ভব হয়নি", "error"); }
   };
 
   const deleteCattle = async (id) => {
@@ -89,9 +80,7 @@ export function AppProvider({ children }) {
         setCattle((prev) => prev.filter((c) => c._id !== id));
         addToast("গরু মুছে ফেলা হয়েছে", "error");
       }
-    } catch (error) {
-      addToast("মুছে ফেলা সম্ভব হয়নি", "error");
-    }
+    } catch (error) { addToast("মুছে ফেলা সম্ভব হয়নি", "error"); }
   };
 
   // ── Milk Logs CRUD ──
@@ -105,10 +94,7 @@ export function AppProvider({ children }) {
       const newLog = await res.json();
       setMilkLogs((p) => [{ ...data, _id: newLog.insertedId }, ...p]);
       addToast("দুধের হিসাব সংরক্ষিত হয়েছে ✓");
-    } catch (error) {
-      console.error(error);
-      addToast("সংরক্ষণ করতে সমস্যা হয়েছে", "error");
-    }
+    } catch (error) { addToast("সংরক্ষণ করতে সমস্যা হয়েছে", "error"); }
   };
 
   const updateMilkLog = async (id, data) => {
@@ -122,9 +108,7 @@ export function AppProvider({ children }) {
         setMilkLogs((p) => p.map((l) => (l._id === id || l.id === id) ? { ...l, ...data } : l));
         addToast("দুধের হিসাব আপডেট হয়েছে ✓");
       }
-    } catch (error) {
-      addToast("আপডেট করা সম্ভব হয়নি", "error");
-    }
+    } catch (error) { addToast("আপডেট করা সম্ভব হয়নি", "error"); }
   };
 
   const deleteMilkLog = async (id) => {
@@ -135,12 +119,10 @@ export function AppProvider({ children }) {
         setMilkLogs((prev) => prev.filter((l) => l._id !== id && l.id !== id));
         addToast("এন্ট্রি মুছে ফেলা হয়েছে", "error");
       }
-    } catch (error) {
-      addToast("মুছে ফেলা সম্ভব হয়নি", "error");
-    }
+    } catch (error) { addToast("মুছে ফেলা সম্ভব হয়নি", "error"); }
   };
 
-  // ── Expense CRUD ──
+  // ── Expense & Income CRUD ──
   const addExpense = async (data) => {
     try {
       const res = await fetch("https://cattle-farm-server.onrender.com/expenses", {
@@ -154,7 +136,6 @@ export function AppProvider({ children }) {
     } catch (error) { console.error(error); }
   };
 
-  // ── Income CRUD ──
   const addIncome = async (data) => {
     try {
       const res = await fetch("https://cattle-farm-server.onrender.com/incomes", {
@@ -168,7 +149,7 @@ export function AppProvider({ children }) {
     } catch (error) { console.error(error); }
   };
 
-  // ── Sales Logic ──
+  // ── Sales & Death Logic ──
   const sellCattle = async (cattleId, saleData) => {
     const cow = cattle.find((c) => c._id === cattleId);
     if (!cow) return;
@@ -185,29 +166,24 @@ export function AppProvider({ children }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(saleRecord),
       });
-
       await updateCattle(cattleId, { status: "sold", saleDate: saleData.saleDate });
-      
       await addIncome({
         date: saleData.saleDate,
         category: "cattle_sale",
         amount: Number(saleData.salePrice),
         description: `${cow.tagId} বিক্রয় — ${saleData.buyerName || "ক্রেতা"}`,
       });
-      
-      fetchAllData(); // রিফ্রেশ
+      fetchAllData();
       addToast(`${cow.tagId} সফলভাবে বিক্রি হয়েছে ✓`);
     } catch (e) { addToast("বিক্রি সম্পন্ন করতে সমস্যা হয়েছে", "error"); }
   };
 
-  // ── Death Logic ──
   const markCattleDead = async (cattleId, deathData) => {
     const cow = cattle.find((c) => c._id === cattleId);
     if (!cow) return;
 
     try {
       await updateCattle(cattleId, { status: "dead", deathDate: deathData.date, deathReason: deathData.reason });
-      
       if (Number(deathData.lossAmount) > 0) {
         await addExpense({
           date: deathData.date,
@@ -222,13 +198,11 @@ export function AppProvider({ children }) {
 
   // ── গুদাম ও খাবারের স্মার্ট লজিক (Smart Inventory Logic) ──
   
-  // ১. গুদামে খাবার যোগ করা এবং অটোমেটিক খরচ সেভ করা
   const addInventoryStock = async (stockData, costAmount) => {
     try {
       const existingItem = inventory.find(i => i.type === stockData.type);
 
       if (existingItem) {
-        // আগে থেকে থাকলে পরিমাণ আপডেট করবে
         const newAmount = Number(existingItem.amount) + Number(stockData.amount);
         await fetch(`https://cattle-farm-server.onrender.com/inventory/${existingItem._id}`, {
           method: "PATCH",
@@ -237,7 +211,6 @@ export function AppProvider({ children }) {
         });
         setInventory(p => p.map(i => i._id === existingItem._id ? { ...i, amount: newAmount } : i));
       } else {
-        // নতুন খাবার হলে নতুন এন্ট্রি তৈরি করবে
         const res = await fetch("https://cattle-farm-server.onrender.com/inventory", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -247,7 +220,6 @@ export function AppProvider({ children }) {
         setInventory(p => [...p, { ...stockData, _id: newInv.insertedId }]);
       }
 
-      // যদি খরচের টাকা দেওয়া থাকে, তবে সেটি 'Expense'-এ সেভ হবে
       if (Number(costAmount) > 0) {
         await addExpense({
           date: stockData.date || new Date().toISOString().slice(0, 10),
@@ -262,10 +234,29 @@ export function AppProvider({ children }) {
     }
   };
 
-  // ২. গরুকে খাবার দেওয়া এবং গুদাম থেকে অটোমেটিক মাইনাস করা
+  // ── [নতুন] স্টক আপডেট এবং ডিলিট করা ──
+  const updateInventoryStock = async (id, newAmount) => {
+    try {
+      await fetch(`https://cattle-farm-server.onrender.com/inventory/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: Number(newAmount) }),
+      });
+      setInventory(p => p.map(i => i._id === id ? { ...i, amount: Number(newAmount) } : i));
+      addToast("স্টক আপডেট হয়েছে ✓");
+    } catch (error) { addToast("আপডেট করতে সমস্যা হয়েছে", "error"); }
+  };
+
+  const deleteInventoryStock = async (id) => {
+    try {
+      await fetch(`https://cattle-farm-server.onrender.com/inventory/${id}`, { method: "DELETE" });
+      setInventory(p => p.filter(i => i._id !== id));
+      addToast("স্টক মুছে ফেলা হয়েছে", "error");
+    } catch (error) { addToast("মুছে ফেলতে সমস্যা হয়েছে", "error"); }
+  };
+
   const addFeedLog = async (logData) => {
     try {
-      // লগ সেভ করা
       const res = await fetch("https://cattle-farm-server.onrender.com/feed_logs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -274,7 +265,6 @@ export function AppProvider({ children }) {
       const newLog = await res.json();
       setFeedLogs(p => [{ ...logData, _id: newLog.insertedId }, ...p]);
 
-      // গুদাম থেকে মাইনাস করা
       const existingItem = inventory.find(i => i.type === logData.type);
       if (existingItem) {
         const newAmount = Math.max(0, Number(existingItem.amount) - Number(logData.amount));
@@ -285,11 +275,42 @@ export function AppProvider({ children }) {
         });
         setInventory(p => p.map(i => i._id === existingItem._id ? { ...i, amount: newAmount } : i));
       }
-
       addToast("গরুকে খাবার দেওয়া সফল হয়েছে 🥣");
-    } catch (error) {
-      addToast("খাবার সেভ করতে সমস্যা হয়েছে", "error");
-    }
+    } catch (error) { addToast("খাবার সেভ করতে সমস্যা হয়েছে", "error"); }
+  };
+
+  // ── [নতুন] ফিড লগ আপডেট এবং ডিলিট করা ──
+  const updateFeedLog = async (id, data) => {
+    try {
+      await fetch(`https://cattle-farm-server.onrender.com/feed_logs/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      setFeedLogs(p => p.map(l => l._id === id ? { ...l, ...data } : l));
+      addToast("রেকর্ড আপডেট হয়েছে ✓");
+    } catch (error) { addToast("আপডেট করতে সমস্যা হয়েছে", "error"); }
+  };
+
+  const deleteFeedLog = async (log) => {
+    try {
+      // লগ ডিলিট করা
+      await fetch(`https://cattle-farm-server.onrender.com/feed_logs/${log._id}`, { method: "DELETE" });
+      setFeedLogs(p => p.filter(l => l._id !== log._id));
+
+      // গুদামে খাবার ফেরত আনা (ম্যাজিক!)
+      const existingItem = inventory.find(i => i.type === log.type);
+      if (existingItem) {
+        const newAmount = Number(existingItem.amount) + Number(log.amount);
+        await fetch(`https://cattle-farm-server.onrender.com/inventory/${existingItem._id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount: newAmount }),
+        });
+        setInventory(p => p.map(i => i._id === existingItem._id ? { ...i, amount: newAmount } : i));
+      }
+      addToast("রেকর্ড মুছে ফেলা হয়েছে এবং গুদামে খাবার ফেরত এসেছে", "error");
+    } catch (error) { addToast("মুছে ফেলতে সমস্যা হয়েছে", "error"); }
   };
 
   // ── Stats ──
@@ -321,11 +342,12 @@ export function AppProvider({ children }) {
   return (
     <AppContext.Provider value={{
       cattle, milkLogs, expenses, incomes, sales, 
-      inventory, feedLogs, // নতুন স্টেট এক্সপোর্ট
+      inventory, feedLogs,
       updateCattle, deleteCattle, fetchRealCattleData, fetchAllData,
       addMilkLog, updateMilkLog, deleteMilkLog,
       addExpense, addIncome, sellCattle, markCattleDead,
-      addInventoryStock, addFeedLog, // নতুন ফাংশন এক্সপোর্ট
+      addInventoryStock, addFeedLog,
+      updateInventoryStock, deleteInventoryStock, updateFeedLog, deleteFeedLog, // <-- নতুন এক্সপোর্ট
       stats, toasts, addToast, removeToast, isOnline,
     }}>
       {children}
