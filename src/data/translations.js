@@ -1,6 +1,6 @@
 export const translations = {
   bn: {
-    // Nav
+    // Nav & Common
     dashboard: "ড্যাশবোর্ড",
     cattle: "গরুর তালিকা",
     dairy: "দুধ ব্যবস্থাপনা",
@@ -8,6 +8,8 @@ export const translations = {
     reports: "রিপোর্ট",
     settings: "সেটিংস",
     logout: "লগআউট",
+    inventory: "খাদ্য মজুত",
+    feedLog: "খাবারের হিসাব",
 
     // Dashboard
     totalCattle: "মোট গরু",
@@ -19,7 +21,7 @@ export const translations = {
     recentActivity: "সাম্প্রতিক কার্যক্রম",
     overview: "সামগ্রিক চিত্র",
 
-    // Cattle
+    // Cattle List & Actions
     addCattle: "নতুন গরু যুক্ত করুন",
     tagId: "ট্যাগ আইডি",
     breed: "জাত",
@@ -31,9 +33,26 @@ export const translations = {
     healthy: "সুস্থ",
     sick: "অসুস্থ",
     forSale: "বিক্রয়যোগ্য",
+    soldOut: "বিক্রি হয়েছে",
+    dead: "মৃত",
     type: "ধরন",
     dairy: "ডেইরি",
     fattening: "মোটাতাজাকরণ",
+    image: "ছবি",
+    tag: "ট্যাগ",
+    name: "নাম",
+    action: "অ্যাকশন",
+    allStatus: "সব অবস্থা",
+    allType: "সব ধরন",
+    
+    // Sell & Death Modals
+    sellCattleTitle: "গরু বিক্রি করুন",
+    buyerName: "ক্রেতার নাম",
+    salePrice: "বিক্রয় মূল্য (৳)",
+    saleDate: "বিক্রির তারিখ",
+    addDeathRecord: "মৃত্যুর রেকর্ড যুক্ত করুন",
+    deathReason: "মৃত্যুর কারণ",
+    estimatedLoss: "আনুমানিক আর্থিক ক্ষতি (৳)",
 
     // Dairy
     milkLog: "দুধের হিসাব",
@@ -47,6 +66,7 @@ export const translations = {
 
     // Finance
     addExpense: "খরচ যুক্ত করুন",
+    addIncome: "আয় যুক্ত করুন",
     feed: "গো-খাদ্য",
     medical: "চিকিৎসা",
     labor: "শ্রমিক বেতন",
@@ -55,13 +75,30 @@ export const translations = {
     amount: "পরিমাণ",
     category: "বিভাগ",
     description: "বিবরণ",
+    source: "উৎস",
     income: "আয়",
     expense: "ব্যয়",
 
-    // UI
+    // User Management
+    userManagement: "ব্যবহারকারী ব্যবস্থাপনা",
+    totalUsers: "মোট ব্যবহারকারী",
+    newUser: "নতুন ব্যবহারকারী",
+    allUsers: "সকল ব্যবহারকারী",
+    activeUsers: "জন সক্রিয়",
+    active: "সক্রিয়",
+    inactive: "নিষ্ক্রিয়",
+    you: "আপনি",
+    fullName: "পূর্ণ নাম *",
+    phone: "ফোন নম্বর",
+    pin: "গোপন পিন",
+    role: "ভূমিকা",
+    joined: "যোগ:",
+    viewDetailsArrow: "বিস্তারিত দেখুন →",
+
+    // UI & Buttons
     save: "সংরক্ষণ করুন",
-    cancel: "বাতিল করুন",
-    edit: "সম্পাদনা",
+    cancel: "বাতিল",
+    edit: "এডিট",
     delete: "মুছুন",
     search: "অনুসন্ধান",
     filter: "ফিল্টার",
@@ -75,8 +112,9 @@ export const translations = {
     confirm: "নিশ্চিত করুন",
     close: "বন্ধ করুন",
     view: "দেখুন",
+    viewDetails: "বিস্তারিত দেখুন",
 
-    // Toast
+    // Toast Messages
     savedSuccess: "সফলভাবে সংরক্ষিত হয়েছে",
     updatedSuccess: "সফলভাবে আপডেট হয়েছে",
     deletedSuccess: "সফলভাবে মুছে ফেলা হয়েছে",
@@ -94,6 +132,7 @@ export const translations = {
   },
 
   en: {
+    // Nav & Common
     dashboard: "Dashboard",
     cattle: "Cattle List",
     dairy: "Dairy Management",
@@ -101,7 +140,10 @@ export const translations = {
     reports: "Reports",
     settings: "Settings",
     logout: "Logout",
+    inventory: "Feed Inventory",
+    feedLog: "Feed Log",
 
+    // Dashboard
     totalCattle: "Total Cattle",
     todayMilk: "Today's Milk",
     monthlyIncome: "Monthly Income",
@@ -111,6 +153,7 @@ export const translations = {
     recentActivity: "Recent Activity",
     overview: "Overview",
 
+    // Cattle List & Actions
     addCattle: "Add New Cattle",
     tagId: "Tag ID",
     breed: "Breed",
@@ -122,10 +165,28 @@ export const translations = {
     healthy: "Healthy",
     sick: "Sick",
     forSale: "For Sale",
+    soldOut: "Sold Out",
+    dead: "Dead",
     type: "Type",
     dairy: "Dairy",
     fattening: "Fattening",
+    image: "Image",
+    tag: "Tag",
+    name: "Name",
+    action: "Action",
+    allStatus: "All Status",
+    allType: "All Types",
 
+    // Sell & Death Modals
+    sellCattleTitle: "Sell Cattle",
+    buyerName: "Buyer Name",
+    salePrice: "Sale Price (৳)",
+    saleDate: "Sale Date",
+    addDeathRecord: "Add Death Record",
+    deathReason: "Reason of Death",
+    estimatedLoss: "Estimated Loss (৳)",
+
+    // Dairy
     milkLog: "Milk Log",
     produced: "Produced",
     sold: "Sold",
@@ -135,7 +196,9 @@ export const translations = {
     date: "Date",
     liters: "Liters",
 
+    // Finance
     addExpense: "Add Expense",
+    addIncome: "Add Income",
     feed: "Animal Feed",
     medical: "Medical",
     labor: "Labor Wages",
@@ -144,9 +207,27 @@ export const translations = {
     amount: "Amount",
     category: "Category",
     description: "Description",
+    source: "Source",
     income: "Income",
     expense: "Expense",
 
+    // User Management
+    userManagement: "User Management",
+    totalUsers: "Total Users",
+    newUser: "New User",
+    allUsers: "All Users",
+    activeUsers: "Active",
+    active: "Active",
+    inactive: "Inactive",
+    you: "You",
+    fullName: "Full Name *",
+    phone: "Phone Number",
+    pin: "Secret PIN",
+    role: "Role",
+    joined: "Joined:",
+    viewDetailsArrow: "View Details →",
+
+    // UI & Buttons
     save: "Save",
     cancel: "Cancel",
     edit: "Edit",
@@ -163,17 +244,21 @@ export const translations = {
     confirm: "Confirm",
     close: "Close",
     view: "View",
+    viewDetails: "View Details",
 
+    // Toast Messages
     savedSuccess: "Saved successfully",
     updatedSuccess: "Updated successfully",
     deletedSuccess: "Deleted successfully",
     errorOccurred: "An error occurred",
     offlineMode: "Offline mode — data saved locally",
 
+    // Roles
     admin: "Admin",
     worker: "Worker",
     shareholder: "Shareholder",
 
+    // App title
     appName: "Smart Cattle Farm",
     appSubtitle: "Professional Farm Management",
   },

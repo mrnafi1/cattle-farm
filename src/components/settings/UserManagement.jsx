@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useApp } from "../../contexts/AppContext";
+import { useLanguage } from "../../contexts/LanguageContext"; // ── নতুন যুক্ত করা হয়েছে ──
 import Modal from "../ui/Modal";
 import Button from "../ui/Button";
 import ConfirmDialog from "../ui/ConfirmDialog";
@@ -10,7 +11,6 @@ const ROLE_STYLES = {
   worker:      "bg-sky-400/10   text-sky-400   border-sky-400/20",
   shareholder: "bg-purple-400/10 text-purple-400 border-purple-400/20",
 };
-const ROLE_LABELS = { admin: "অ্যাডমিন", worker: "কর্মী", shareholder: "শেয়ারহোল্ডার" };
 
 const ROLE_PERMISSIONS = {
   admin:       ["ড্যাশবোর্ড", "গরুর তালিকা (পড়া+লেখা)", "দুধের হিসাব (পড়া+লেখা)", "আয়-ব্যয় (পড়া+লেখা)", "রিপোর্ট", "ব্যবহারকারী ব্যবস্থাপনা"],
@@ -27,6 +27,10 @@ const EMPTY = { name: "", role: "worker", pin: "", phone: "" };
 export default function UserManagement() {
   const { users, currentUser, addUser, updateUser, deleteUser, toggleUserActive } = useAuth();
   const { addToast } = useApp();
+  const { t } = useLanguage(); // ── অনুবাদ আনার ফাংশন ──
+
+  // ডায়নামিক রোল লেবেল (ভাষা পরিবর্তনের সাথে সাথে বদলাবে)
+  const ROLE_LABELS = { admin: t("admin"), worker: t("worker"), shareholder: t("shareholder") };
 
   const [showForm,     setShowForm]     = useState(false);
   const [editTarget,   setEditTarget]   = useState(null);
@@ -62,11 +66,11 @@ export default function UserManagement() {
     if (editTarget) {
       const res = await updateUser(editTarget._id || editTarget.id, form);
       if (res && !res.ok) return setFormErr(res.msg);
-      addToast("ব্যবহারকারীর তথ্য আপডেট হয়েছে");
+      addToast(t("updatedSuccess"));
     } else {
       const res = await addUser(form);
       if (res && !res.ok) return setFormErr(res.msg);
-      addToast("নতুন ব্যবহারকারী যুক্ত হয়েছে");
+      addToast(t("savedSuccess"));
     }
     closeAll();
   };
@@ -76,7 +80,7 @@ export default function UserManagement() {
     if (res && !res.ok) { 
       addToast(res.msg, "error"); 
     } else { 
-      addToast("ব্যবহারকারী মুছে ফেলা হয়েছে", "error"); 
+      addToast(t("deletedSuccess"), "error"); 
     }
     setDeleteTarget(null);
   };
@@ -86,10 +90,10 @@ export default function UserManagement() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-white">ব্যবহারকারী ব্যবস্থাপনা</h2>
-          <p className="text-slate-500 text-sm">মোট {users.length} জন ব্যবহারকারী নিবন্ধিত</p>
+          <h2 className="text-xl font-bold text-white">{t("userManagement")}</h2>
+          <p className="text-slate-500 text-sm">{t("totalUsers")}: {users.length}</p>
         </div>
-        <Button onClick={openAdd}>+ নতুন ব্যবহারকারী</Button>
+        <Button onClick={openAdd}>+ {t("newUser")}</Button>
       </div>
 
       {/* Role permissions guide */}
@@ -98,10 +102,10 @@ export default function UserManagement() {
           <div key={role} className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 cursor-pointer hover:border-slate-600 transition-colors" onClick={() => setShowPerms(role)}>
             <div className="flex items-center justify-between mb-2">
               <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${ROLE_STYLES[role]}`}>{ROLE_LABELS[role]}</span>
-              <span className="text-slate-500 text-xs">{users.filter((u) => u.role === role && u.active !== false).length} জন সক্রিয়</span>
+              <span className="text-slate-500 text-xs">{users.filter((u) => u.role === role && u.active !== false).length} {t("activeUsers")}</span>
             </div>
             <p className="text-slate-400 text-xs">{ROLE_PERMISSIONS[role][0]}...</p>
-            <p className="text-amber-400/60 text-xs mt-1">বিস্তারিত দেখুন →</p>
+            <p className="text-amber-400/60 text-xs mt-1">{t("viewDetailsArrow")}</p>
           </div>
         ))}
       </div>
@@ -109,11 +113,10 @@ export default function UserManagement() {
       {/* Users table */}
       <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-700/40">
-          <p className="text-white font-semibold text-sm">সকল ব্যবহারকারী</p>
+          <p className="text-white font-semibold text-sm">{t("allUsers")}</p>
         </div>
         <div className="divide-y divide-slate-700/30">
           {users.map((u) => {
-            // ── বাগ ফিক্স: কে আসল ইউজার তা সঠিকভাবে যাচাই করা ──
             const isMe = (u._id && currentUser?._id && u._id === currentUser._id) || (u.id && currentUser?.id && u.id === currentUser.id);
 
             return (
@@ -126,31 +129,28 @@ export default function UserManagement() {
                   <div>
                     <div className="flex items-center gap-2">
                       <span className={`text-sm font-medium ${u.active === false ? "text-slate-500 line-through" : "text-white"}`}>{u.name}</span>
-                      {/* শুধুমাত্র নিজের নামের পাশে "আপনি" দেখাবে */}
                       {isMe && (
-                        <span className="text-xs px-1.5 py-0.5 bg-amber-400/10 text-amber-400 rounded border border-amber-400/20">আপনি</span>
+                        <span className="text-xs px-1.5 py-0.5 bg-amber-400/10 text-amber-400 rounded border border-amber-400/20">{t("you")}</span>
                       )}
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className={`text-xs px-2 py-0.5 rounded-full border ${ROLE_STYLES[u.role]}`}>{ROLE_LABELS[u.role]}</span>
                       {u.phone && <span className="text-slate-500 text-xs">📞 {u.phone}</span>}
-                      {u.createdAt && <span className="text-slate-600 text-xs">যোগ: {u.createdAt}</span>}
+                      {u.createdAt && <span className="text-slate-600 text-xs">{t("joined")} {u.createdAt}</span>}
                     </div>
                   </div>
                 </div>
 
-                {/* Actions কলাম */}
                 <div className="flex items-center gap-1.5">
                   {!isMe && (
-                    <button onClick={() => toggleUserActive(u._id || u.id)} className={`px-2 py-1 rounded text-xs transition-all ${u.active === false ? "text-emerald-400 hover:bg-emerald-400/10" : "text-slate-400 hover:bg-slate-700/50"}`} title={u.active === false ? "সक्रिय করুন" : "নিষ্ক্রিয় করুন"}>
-                      {u.active === false ? "✓ সক্রিয়" : "⏸ নিষ্ক্রিয়"}
+                    <button onClick={() => toggleUserActive(u._id || u.id)} className={`px-2 py-1 rounded text-xs transition-all ${u.active === false ? "text-emerald-400 hover:bg-emerald-400/10" : "text-slate-400 hover:bg-slate-700/50"}`}>
+                      {u.active === false ? `✓ ${t("active")}` : `⏸ ${t("inactive")}`}
                     </button>
                   )}
-                  <button onClick={() => openEdit(u)} className="px-2 py-1 rounded text-xs text-sky-400 hover:bg-sky-400/10 transition-all">✏️ এডিট</button>
+                  <button onClick={() => openEdit(u)} className="px-2 py-1 rounded text-xs text-sky-400 hover:bg-sky-400/10 transition-all">✏️ {t("edit")}</button>
                   
-                  {/* নিজেকে ছাড়া অন্য সবাইকে ডিলিট করা যাবে */}
                   {!isMe && (
-                    <button onClick={() => setDeleteTarget(u)} className="px-2 py-1 rounded text-xs text-red-400 hover:bg-red-400/10 transition-all" title="মুছে ফেলুন">🗑️</button>
+                    <button onClick={() => setDeleteTarget(u)} className="px-2 py-1 rounded text-xs text-red-400 hover:bg-red-400/10 transition-all">🗑️</button>
                   )}
                 </div>
               </div>
@@ -160,54 +160,53 @@ export default function UserManagement() {
       </div>
 
       {/* Add/Edit Modal */}
-      <Modal isOpen={showForm || !!editTarget} onClose={closeAll} title={editTarget ? `এডিট: ${editTarget.name}` : "নতুন ব্যবহারকারী যুক্ত করুন"}>
+      <Modal isOpen={showForm || !!editTarget} onClose={closeAll} title={editTarget ? `${t("edit")}: ${editTarget.name}` : t("newUser")}>
         <div className="space-y-4">
-          <Field label="পূর্ণ নাম *"><Input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="যেমন: করিম মিয়া" /></Field>
-          <Field label={form.role === "admin" ? "ফোন নম্বর (ঐচ্ছিক)" : "ফোন নম্বর (লগইনের জন্য বাধ্যতামূলক) *"}>
+          <Field label={t("fullName")}><Input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Name" /></Field>
+          <Field label={form.role === "admin" ? `${t("phone")} (Optional)` : `${t("phone")} *`}>
             <Input type="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="01XXXXXXXXX" />
           </Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="ভূমিকা *">
+            <Field label={`${t("role")} *`}>
               <Select value={form.role} onChange={(e) => set("role", e.target.value)}>
-                <option value="admin">অ্যাডমিন</option>
-                <option value="worker">কর্মী</option>
-                <option value="shareholder">শেয়ারহোল্ডার</option>
+                <option value="admin">{t("admin")}</option>
+                <option value="worker">{t("worker")}</option>
+                <option value="shareholder">{t("shareholder")}</option>
               </Select>
             </Field>
-            <Field label="গোপন পিন / পাসওয়ার্ড (রিসেট করুন) *">
-              <Input type="text" value={form.pin} onChange={(e) => set("pin", e.target.value)} placeholder={editTarget ? "নতুন পিন দিন" : "অটোমেটিক তৈরি হবে"} maxLength={6} />
+            <Field label={`${t("pin")} *`}>
+              <Input type="text" value={form.pin} onChange={(e) => set("pin", e.target.value)} placeholder="PIN" maxLength={6} />
             </Field>
           </div>
           <div className="bg-slate-700/30 rounded-lg p-3 mt-4">
-            <p className="text-slate-400 text-xs font-semibold mb-2">{ROLE_LABELS[form.role]} — অ্যাক্সেস পাবে:</p>
+            <p className="text-slate-400 text-xs font-semibold mb-2">{ROLE_LABELS[form.role]} — Access:</p>
             <ul className="space-y-1">
               {ROLE_PERMISSIONS[form.role].map((p) => <li key={p} className="text-slate-300 text-xs flex items-center gap-1.5"><span className="text-emerald-400">✓</span> {p}</li>)}
             </ul>
           </div>
           {formErr && <p className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">⚠ {formErr}</p>}
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-700/40 mt-4">
-            <Button variant="secondary" onClick={closeAll}>বাতিল</Button>
-            <Button onClick={handleSave}>💾 সংরক্ষণ করুন</Button>
+            <Button variant="secondary" onClick={closeAll}>{t("cancel")}</Button>
+            <Button onClick={handleSave}>💾 {t("save")}</Button>
           </div>
         </div>
       </Modal>
 
       {/* Permissions info modal */}
-      <Modal isOpen={!!showPerms} onClose={() => setShowPerms(null)} title={`${ROLE_LABELS[showPerms] || ""} — অ্যাক্সেস বিবরণী`}>
+      <Modal isOpen={!!showPerms} onClose={() => setShowPerms(null)} title={ROLE_LABELS[showPerms] || ""}>
         {showPerms && (
           <div className="space-y-3">
-            <p className="text-slate-400 text-sm"><span className={`inline-block px-2 py-0.5 rounded-full border text-xs font-semibold mr-2 ${ROLE_STYLES[showPerms]}`}>{ROLE_LABELS[showPerms]}</span>ভূমিকার সুবিধাসমূহ:</p>
+            <p className="text-slate-400 text-sm"><span className={`inline-block px-2 py-0.5 rounded-full border text-xs font-semibold mr-2 ${ROLE_STYLES[showPerms]}`}>{ROLE_LABELS[showPerms]}</span></p>
             <ul className="space-y-2 mb-4">
               {ROLE_PERMISSIONS[showPerms].map((p) => <li key={p} className="flex items-start gap-2 text-slate-300 text-sm"><span className="text-emerald-400 mt-0.5">✓</span>{p}</li>)}
             </ul>
-            {showPerms === "shareholder" && <div className="bg-amber-400/5 border border-amber-400/15 rounded-lg p-3 text-xs text-slate-400">💡 শেয়ারহোল্ডার শুধু রিপোর্ট দেখতে ও PDF নামাতে পারবে।</div>}
-            <div className="flex justify-end pt-2 mt-4"><Button variant="secondary" onClick={() => setShowPerms(null)}>বন্ধ করুন</Button></div>
+            <div className="flex justify-end pt-2 mt-4"><Button variant="secondary" onClick={() => setShowPerms(null)}>{t("close")}</Button></div>
           </div>
         )}
       </Modal>
 
       {/* Delete confirm */}
-      <ConfirmDialog isOpen={!!deleteTarget} message={`"${deleteTarget?.name}" কে মুছে ফেলবেন?`} onCancel={() => setDeleteTarget(null)} onConfirm={handleDelete} />
+      <ConfirmDialog isOpen={!!deleteTarget} message={`"${deleteTarget?.name}" ${t("delete")}?`} onCancel={() => setDeleteTarget(null)} onConfirm={handleDelete} />
     </div>
   );
 }
