@@ -20,10 +20,10 @@ export default function Dashboard() {
 
       {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label={t("totalCattle")}    value={fmt(stats.totalCattle)}                          icon="🐄" color="amber" />
-        <StatCard label={t("todayMilk")}      value={`${fmt(stats.todayMilk)} L`}                    icon="🥛" color="sky" />
-        <StatCard label={t("monthlyIncome")}  value={`৳${fmt(stats.monthlyIncome)}`}                  icon="💰" color="emerald" trend={1} trendLabel="গত মাসের চেয়ে বেশি" />
-        <StatCard label={t("netProfit")}      value={`৳${fmt(stats.netProfit)}`}                      icon={stats.netProfit >= 0 ? "📈" : "📉"} color={stats.netProfit >= 0 ? "emerald" : "red"} />
+        <StatCard label={t("totalCattle")}    value={fmt(stats.totalCattle)}                    icon="🐄" color="amber" />
+        <StatCard label={t("todayMilk")}      value={`${fmt(stats.todayMilk)} L`}               icon="🥛" color="sky" />
+        <StatCard label={t("monthlyIncome")}  value={`৳${fmt(stats.monthlyIncome)}`}             icon="💰" color="emerald" trend={1} trendLabel={language === "bn" ? "গত মাসের চেয়ে বেশি" : "More than last month"} />
+        <StatCard label={t("netProfit")}      value={`৳${fmt(stats.netProfit)}`}                 icon={stats.netProfit >= 0 ? "📈" : "📉"} color={stats.netProfit >= 0 ? "emerald" : "red"} />
       </div>
 
       {/* Charts */}
@@ -36,7 +36,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Cattle status */}
         <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-5">
-          <h3 className="text-white font-semibold text-sm mb-4">গরুর অবস্থা</h3>
+          <h3 className="text-white font-semibold text-sm mb-4">{language === "bn" ? "গরুর অবস্থা" : "Cattle Status"}</h3>
           <div className="space-y-3">
             {[
               { label: t("healthy"), count: stats.healthyCattle, dot: "bg-emerald-400", bg: "bg-emerald-400/8" },
@@ -70,7 +70,7 @@ export default function Dashboard() {
                 onClick={() => setShowVaccineModal(true)}
                 className="text-xs text-amber-400 hover:text-amber-300 transition-colors border border-amber-400/20 hover:border-amber-400/40 px-2.5 py-1 rounded-lg"
               >
-                সব দেখুন →
+                {language === "bn" ? "সব দেখুন →" : "View All →"}
               </button>
             )}
           </div>
@@ -78,7 +78,7 @@ export default function Dashboard() {
           {stats.upcomingVaccines.length === 0 ? (
             <div className="flex items-center gap-3 py-2">
               <span className="text-2xl">✅</span>
-              <p className="text-slate-400 text-sm">আগামী ৩০ দিনে কোনো টিকা নেই</p>
+              <p className="text-slate-400 text-sm">{language === "bn" ? "আগামী ৩০ দিনে কোনো টিকা নেই" : "No vaccines scheduled for the next 30 days"}</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -102,7 +102,7 @@ export default function Dashboard() {
                         ? "bg-red-400/15 text-red-400 border-red-400/25"
                         : "bg-amber-400/10 text-amber-400 border-amber-400/20"
                     }`}>
-                      {daysLeft} দিন
+                      {daysLeft} {language === "bn" ? "দিন" : "Days"}
                     </span>
                   </div>
                 );
