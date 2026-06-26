@@ -52,9 +52,13 @@ export default function ReportView() {
     return acc;
   }, {});
 
-  const catIcons = { feed: "🌾", medical: "💊", labor: "👷", electricity: "⚡", other: "📦" };
+  // নতুন ক্যাটাগরি এবং আইকন যোগ করা হলো
+  const catIcons = { feed: "🌾", feed_purchase: "🌾", cattle_purchase: "🐄", cattle_death: "💀", medical: "💊", labor: "👷", electricity: "⚡", other: "📦" };
   const catNames = { 
     feed: language === "bn" ? "গো-খাদ্য" : "Feed", 
+    feed_purchase: language === "bn" ? "খাবার ক্রয়" : "Feed Purchase",
+    cattle_purchase: language === "bn" ? "গরু ক্রয়" : "Cattle Purchase",
+    cattle_death: language === "bn" ? "গরুর মৃত্যু (ক্ষতি)" : "Cattle Death (Loss)",
     medical: language === "bn" ? "চিকিৎসা" : "Medical", 
     labor: language === "bn" ? "শ্রমিক বেতন" : "Labor", 
     electricity: language === "bn" ? "বিদ্যুৎ" : "Electricity", 
@@ -198,7 +202,8 @@ export default function ReportView() {
                 <div key={cat}>
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-slate-300 print:text-slate-700 text-sm">
-                      {catIcons[cat]} {catNames[cat] || cat}
+                      {/* আইকনের ফলব্যাক হিসেবে "📦" দেওয়া হলো */}
+                      {catIcons[cat] || "📦"} {catNames[cat] || cat}
                     </span>
                     <div className="text-right">
                       <span className="text-white print:text-slate-900 font-medium text-sm">৳{fmt(amt)}</span>

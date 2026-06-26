@@ -23,9 +23,17 @@ export default function MainLayout({ children, activePage, onNavigate, onFABActi
         />
 
         <main className="flex-1 overflow-y-auto">
-          {/* এখানে pb-28 যোগ করা হয়েছে যাতে মোবাইলে FAB এর নিচে কন্টেন্ট ঢাকা না পড়ে */}
-          <div className="p-4 pb-28 lg:p-6 lg:pb-10 max-w-7xl mx-auto">
-            {children}
+          {/* flex এবং min-h-full যোগ করা হলো */}
+          <div className="p-4 lg:p-6 max-w-7xl mx-auto flex flex-col min-h-full relative">
+            
+            {/* আপনার মূল কন্টেন্ট */}
+            <div className="flex-1">
+              {children}
+            </div>
+            
+            {/* এই খালি div-টি বাটনের নিচে নিশ্চিত ফাঁকা জায়গা (Spacer) তৈরি করবে */}
+            <div className="h-28 shrink-0 w-full pointer-events-none"></div>
+            
           </div>
         </main>
       </div>

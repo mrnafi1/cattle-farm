@@ -6,7 +6,8 @@ import Button from "../ui/Button";
 import Modal from "../ui/Modal";
 import ConfirmDialog from "../ui/ConfirmDialog";
 
-const CAT_ICONS = { feed: "🌾", medical: "💊", labor: "👷", electricity: "⚡", other: "📦" };
+// নতুন ক্যাটাগরিগুলো যোগ করা হলো
+const CAT_ICONS = { feed: "🌾", feed_purchase: "🌾", cattle_purchase: "🐄", cattle_death: "💀", medical: "💊", labor: "👷", electricity: "⚡", other: "📦" };
 
 const Input = (props) => (
   <input {...props} className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400/60 placeholder-slate-500" />
@@ -61,6 +62,15 @@ export default function ExpenseTracker() {
 
   const fmt = (n) => n.toLocaleString(language === "bn" ? "bn-BD" : "en-BD");
 
+  // ক্যাটাগরির নাম বাংলায় রূপান্তরের ফাংশন
+  const getCatName = (cat) => {
+    if (language !== "bn") return cat;
+    const names = {
+      feed: "গো-খাদ্য", feed_purchase: "খাবার ক্রয়", cattle_purchase: "গরু ক্রয়", cattle_death: "গরুর মৃত্যু (ক্ষতি)", medical: "চিকিৎসা", labor: "শ্রমিক বেতন", electricity: "বিদ্যুৎ", other: "অন্যান্য"
+    };
+    return names[cat] || cat;
+  };
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -77,18 +87,21 @@ export default function ExpenseTracker() {
         )}
       </div>
 
-      {/* Summary - এখানে গ্রিড এবং ট্রাঙ্কেট লজিক আপডেট করা হয়েছে */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-        {[
-          { label: t("monthlyIncome"),  value: `৳${fmt(stats.monthlyIncome)}`,  color: "text-emerald-400", border: "border-emerald-500/20", col: "col-span-1" },
-          { label: t("monthlyExpense"), value: `৳${fmt(stats.monthlyExpense)}`, color: "text-red-400",     border: "border-red-500/20", col: "col-span-1" },
-          { label: t("netProfit"),      value: `৳${fmt(stats.netProfit)}`,      color: stats.netProfit >= 0 ? "text-amber-400" : "text-red-400", border: "border-amber-500/20", col: "col-span-2 sm:col-span-1" },
-        ].map((s) => (
-          <div key={s.label} className={`bg-slate-800/40 border ${s.border} rounded-xl p-3 sm:p-4 text-center min-w-0 ${s.col}`}>
-            <p className="text-slate-400 text-xs mb-1 truncate" title={s.label}>{s.label}</p>
-            <p className={`text-lg sm:text-xl font-bold truncate ${s.color}`} title={s.value}>{s.value}</p>
-          </div>
-        ))}
+      {/* Summary - এই গ্রিডটি ঠিক করা হয়েছে (২ কলাম) */}
+      <div className="grid grid-cols-2 gap-3 mb-2">
+        <div className="bg-slate-800/40 border border-emerald-500/20 rounded-xl p-3 text-center min-w-0 flex flex-col justify-center">
+          <p className="text-slate-400 text-[11px] sm:text-xs mb-1 truncate" title={t("monthlyIncome")}>{t("monthlyIncome")}</p>
+          <p className="text-base sm:text-xl font-bold text-emerald-400 truncate" title={`৳${fmt(stats.monthlyIncome)}`}>৳{fmt(stats.monthlyIncome)}</p>
+        </div>
+        <div className="bg-slate-800/40 border border-red-500/20 rounded-xl p-3 text-center min-w-0 flex flex-col justify-center">
+          <p className="text-slate-400 text-[11px] sm:text-xs mb-1 truncate" title={t("monthlyExpense")}>{t("monthlyExpense")}</p>
+          <p className="text-base sm:text-xl font-bold text-red-400 truncate" title={`৳${fmt(stats.monthlyExpense)}`}>৳{fmt(stats.monthlyExpense)}</p>
+        </div>
+        {/* নিট লাভ নিচে পুরো জায়গা জুড়ে থাকবে */}
+        <div className="col-span-2 bg-slate-800/40 border border-amber-500/20 rounded-xl p-4 text-center min-w-0 flex flex-col justify-center">
+          <p className="text-slate-400 text-xs mb-1 truncate" title={t("netProfit")}>{t("netProfit")}</p>
+          <p className={`text-xl sm:text-2xl font-bold truncate ${stats.netProfit >= 0 ? "text-amber-400" : "text-red-400"}`} title={`৳${fmt(stats.netProfit)}`}>৳{fmt(stats.netProfit)}</p>
+        </div>
       </div>
 
       {/* Tab */}
@@ -120,15 +133,15 @@ export default function ExpenseTracker() {
                   <tr key={e._id || e.id} className="hover:bg-slate-700/20 transition-colors">
                     <td className="px-4 py-3 text-slate-400 text-sm">{e.date}</td>
                     <td className="px-4 py-3">
-                      <span className="flex items-center gap-1.5 text-sm text-slate-300">
-                        {CAT_ICONS[e.category]} {t(e.category)}
+                      <span className="flex items-center gap-1.5 text-sm text-slate-300 whitespace-nowrap">
+                        {CAT_ICONS[e.category] || "📦"} {getCatName(e.category)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-slate-300 text-sm max-w-[160px] truncate">{e.description}</td>
-                    <td className="px-4 py-3 text-red-400 font-semibold text-sm">-৳{fmt(e.amount)}</td>
+                    <td className="px-4 py-3 text-slate-300 text-sm max-w-[160px] truncate" title={e.description}>{e.description}</td>
+                    <td className="px-4 py-3 text-red-400 font-semibold text-sm whitespace-nowrap">-৳{fmt(e.amount)}</td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1">
-                        {canEdit   && <button onClick={() => openEditExp(e)} className="px-2 py-1 rounded text-xs text-sky-400 hover:bg-sky-400/10">✏️ {t("edit")}</button>}
+                        {canEdit   && <button onClick={() => openEditExp(e)} className="px-2 py-1 rounded text-xs text-sky-400 hover:bg-sky-400/10">✏️</button>}
                         {canDelete && <button onClick={() => setDeleteExp(e)} className="px-2 py-1 rounded text-xs text-red-400 hover:bg-red-400/10">🗑️</button>}
                       </div>
                     </td>
@@ -156,12 +169,12 @@ export default function ExpenseTracker() {
                 {incomes.map((i) => (
                   <tr key={i._id || i.id} className="hover:bg-slate-700/20 transition-colors">
                     <td className="px-4 py-3 text-slate-400 text-sm">{i.date}</td>
-                    <td className="px-4 py-3 text-slate-300 text-sm">💰 {i.source}</td>
-                    <td className="px-4 py-3 text-slate-300 text-sm max-w-[160px] truncate">{i.description}</td>
-                    <td className="px-4 py-3 text-emerald-400 font-semibold text-sm">+৳{fmt(i.amount)}</td>
+                    <td className="px-4 py-3 text-slate-300 text-sm whitespace-nowrap">💰 {i.source}</td>
+                    <td className="px-4 py-3 text-slate-300 text-sm max-w-[160px] truncate" title={i.description}>{i.description}</td>
+                    <td className="px-4 py-3 text-emerald-400 font-semibold text-sm whitespace-nowrap">+৳{fmt(i.amount)}</td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1">
-                        {canEdit   && <button onClick={() => openEditInc(i)} className="px-2 py-1 rounded text-xs text-sky-400 hover:bg-sky-400/10">✏️ {t("edit")}</button>}
+                        {canEdit   && <button onClick={() => openEditInc(i)} className="px-2 py-1 rounded text-xs text-sky-400 hover:bg-sky-400/10">✏️</button>}
                         {canDelete && <button onClick={() => setDeleteInc(i)} className="px-2 py-1 rounded text-xs text-red-400 hover:bg-red-400/10">🗑️</button>}
                       </div>
                     </td>
@@ -180,7 +193,7 @@ export default function ExpenseTracker() {
           <Field label={t("category")}>
             <select value={expForm.category} onChange={(e) => setE("category", e.target.value)}
               className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400/60">
-              {Object.keys(CAT_ICONS).map((k) => <option key={k} value={k}>{CAT_ICONS[k]} {t(k)}</option>)}
+              {Object.keys(CAT_ICONS).map((k) => <option key={k} value={k}>{CAT_ICONS[k]} {getCatName(k)}</option>)}
             </select>
           </Field>
           <Field label={t("amount")}><Input type="number" value={expForm.amount} onChange={(e) => setE("amount", e.target.value)} placeholder="5000" /></Field>
