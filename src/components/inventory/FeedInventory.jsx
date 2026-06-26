@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useApp } from "../../contexts/AppContext"; // গরুর তালিকা আনার জন্য AppContext যুক্ত করা হলো
+import { useApp } from "../../contexts/AppContext";
 import Button from "../ui/Button";
 import Modal from "../ui/Modal";
 
@@ -18,32 +18,76 @@ const Select = ({ children, ...props }) => (
 );
 
 export default function FeedInventory() {
-  const { cattle } = useApp(); // ফার্মের গরুর ডাটা নিয়ে আসা হলো
+  // AppContext থেকে রিয়েল ডাটা এবং ফাংশন নিয়ে আসা হলো
+  const { cattle, inventory, feedLogs, addInventoryStock, addFeedLog, addToast } = useApp();
+  
   const [activeTab, setActiveTab] = useState("stock"); // 'stock' or 'logs'
   const [showAddStock, setShowAddStock] = useState(false);
   const [showFeedCattle, setShowFeedCattle] = useState(false);
 
-  // ── নতুন যুক্ত করা স্টেট (নির্দিষ্ট গরুকে খাবার দেওয়ার জন্য) ──
+  // ── নির্দিষ্ট গরুকে খাবার দেওয়ার স্টেট ──
   const [feedTargetType, setFeedTargetType] = useState("all"); 
   const [selectedCattleId, setSelectedCattleId] = useState("");
 
-  // শুধুমাত্র জীবিত এবং ফার্মে উপস্থিত গরু ফিল্টার করা হলো
   const activeCattle = cattle?.filter(c => c.status !== "sold" && c.status !== "dead") || [];
 
-  // আপাতত ডেমো ডাটা (পরে এটি AppContext থেকে আসবে)
-  const [inventory, setInventory] = useState([
-    { id: 1, type: "ভুসি", amount: 150, unit: "kg" },
-    { id: 2, type: "খড়", amount: 300, unit: "kg" },
-    { id: 3, type: "সাইলেজ", amount: 500, unit: "kg" },
-  ]);
+  // ── ফর্মের ডাটা স্টেট ──
+  const [stockForm, setStockForm] = useState({ type: FEED_TYPES[0], amount: "", cost: "", date: new Date().toISOString().slice(0, 10) });
+  const [feedForm, setFeedForm] = useState({ type: FEED_TYPES[0], amount: "", date: new Date().toISOString().slice(0, 10) });
 
-  const [feedLogs, setFeedLogs] = useState([]);
-
-  // ── মোডাল বন্ধ করার ফাংশন (যাতে ড্রপডাউন রিসেট হয়ে যায়) ──
   const closeFeedModal = () => {
     setShowFeedCattle(false);
     setFeedTargetType("all");
     setSelectedCattleId("");
+    setFeedForm({ type: FEED_TYPES[0], amount: "", date: new Date().toISOString().slice(0, 10) });
+  };
+
+  const closeStockModal = () => {
+    setShowAddStock(false);
+    setStockForm({ type: FEED_TYPES[0], amount: "", cost: "", date: new Date().toISOString().slice(0, 10) });
+  };
+
+  // ── সেভ করার লজিক ──
+  const handleSaveStock = async () => {
+    if (!stockForm.amount || Number(stockForm.amount) <= 0) return addToast("পরিমাণ দিন", "error");
+    
+    await addInventoryStock({
+      type: stockForm.type,
+      amount: Number(stockForm.amount),
+      unit: "kg",
+      date: stockForm.date
+    }, stockForm.cost);
+    
+    closeStockModal();
+  };
+
+  const handleSaveFeed = async () => {
+    if (!feedForm.amount || Number(feedForm.amount) <= 0) return addToast("পরিমাণ দিন", "error");
+    if (feedTargetType === "single" && !selectedCattleId) return addToast("গরু নির্বাচন করুন", "error");
+
+    // গুদামে পর্যাপ্ত খাবার আছে কি না চেক করা
+    const currentStock = inventory.find(i => i.type === feedForm.type)?.amount || 0;
+    if (currentStock < Number(feedForm.amount)) {
+      return addToast("গুদামে পর্যাপ্ত খাবার নেই!", "error");
+    }
+
+    const selectedCow = activeCattle.find(c => c._id === selectedCattleId);
+    let note = "সব গরুকে একসাথে";
+    if (feedTargetType === "single" && selectedCow) {
+      note = `${selectedCow.tagId} - ${selectedCow.name || 'নামহীন'} কে দেওয়া হয়েছে`;
+    }
+
+    await addFeedLog({
+      date: feedForm.date,
+      category: "out",
+      type: feedForm.type,
+      amount: Number(feedForm.amount),
+      targetType: feedTargetType,
+      cattleId: selectedCattleId || null,
+      note: note
+    });
+
+    closeFeedModal();
   };
 
   return (
@@ -80,17 +124,20 @@ export default function FeedInventory() {
       {activeTab === "stock" && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {inventory.map((item) => (
-            <div key={item.id} className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 flex flex-col items-center justify-center relative overflow-hidden">
+            <div key={item._id || item.type} className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 flex flex-col items-center justify-center relative overflow-hidden">
               {item.amount < 50 && (
                 <span className="absolute top-0 right-0 bg-red-500/80 text-white text-[10px] px-2 py-1 rounded-bl-lg font-bold">অ্যালার্ট</span>
               )}
               <div className="text-3xl mb-2">🌾</div>
               <p className="text-slate-400 text-sm">{item.type}</p>
               <p className={`text-2xl font-bold ${item.amount < 50 ? "text-red-400" : "text-white"}`}>
-                {item.amount} <span className="text-sm font-normal text-slate-500">{item.unit}</span>
+                {item.amount} <span className="text-sm font-normal text-slate-500">{item.unit || 'kg'}</span>
               </p>
             </div>
           ))}
+          {(!inventory || inventory.length === 0) && (
+            <div className="col-span-full text-center py-8 text-slate-500 bg-slate-800/40 rounded-xl border border-slate-700/40">গুদামে কোনো খাবার নেই।</div>
+          )}
         </div>
       )}
 
@@ -107,11 +154,12 @@ export default function FeedInventory() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/30">
-                {feedLogs.length === 0 ? (
+                {!feedLogs || feedLogs.length === 0 ? (
                   <tr><td colSpan={5} className="text-center py-8 text-slate-500">কোনো রেকর্ড নেই</td></tr>
                 ) : (
-                  feedLogs.map((log, idx) => (
-                    <tr key={idx} className="hover:bg-slate-700/20">
+                  // নতুন রেকর্ডগুলো উপরে দেখানোর জন্য রিভার্স করে ম্যাপ করা হলো (যদি সার্ভার থেকে সাজিয়ে না আসে)
+                  [...feedLogs].reverse().map((log, idx) => (
+                    <tr key={log._id || idx} className="hover:bg-slate-700/20">
                       <td className="px-4 py-3 text-slate-300 text-sm">{log.date}</td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-1 rounded text-xs ${log.category === "in" ? "bg-emerald-500/10 text-emerald-400" : "bg-sky-500/10 text-sky-400"}`}>
@@ -130,36 +178,36 @@ export default function FeedInventory() {
         </div>
       )}
 
-      {/* Modals for Add Stock & Feed Cattle */}
-      {/* এগুলো আমরা ডাটাবেস কানেক্ট করার সময় ফাংশনাল করব, আপাতত শুধু ডেমো UI */}
-      <Modal isOpen={showAddStock} onClose={() => setShowAddStock(false)} title="গুদামে খাবার যুক্ত করুন" size="sm">
+      {/* ── Modal: গুদামে খাবার যুক্ত করুন ── */}
+      <Modal isOpen={showAddStock} onClose={closeStockModal} title="গুদামে খাবার যুক্ত করুন" size="sm">
         <div className="space-y-4">
           <Field label="খাদ্যের ধরন">
-            <Select>
+            <Select value={stockForm.type} onChange={(e) => setStockForm({...stockForm, type: e.target.value})}>
               {FEED_TYPES.map(f => <option key={f} value={f}>{f}</option>)}
             </Select>
           </Field>
-          <Field label="পরিমাণ (kg)"><Input type="number" placeholder="যেমন: 100" /></Field>
-          <Field label="মোট খরচ (৳)"><Input type="number" placeholder="যেমন: 5000" /></Field>
-          <Field label="তারিখ"><Input type="date" defaultValue={new Date().toISOString().slice(0,10)} /></Field>
+          <Field label="পরিমাণ (kg)"><Input type="number" placeholder="যেমন: 100" value={stockForm.amount} onChange={(e) => setStockForm({...stockForm, amount: e.target.value})} /></Field>
+          <Field label="মোট খরচ (৳) [খরচের হিসাবে যুক্ত হবে]"><Input type="number" placeholder="যেমন: 5000" value={stockForm.cost} onChange={(e) => setStockForm({...stockForm, cost: e.target.value})} /></Field>
+          <Field label="তারিখ"><Input type="date" value={stockForm.date} onChange={(e) => setStockForm({...stockForm, date: e.target.value})} /></Field>
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" onClick={() => setShowAddStock(false)}>বাতিল</Button>
-            <Button>💾 সংরক্ষণ করুন</Button>
+            <Button variant="secondary" onClick={closeStockModal}>বাতিল</Button>
+            <Button onClick={handleSaveStock}>💾 সংরক্ষণ করুন</Button>
           </div>
         </div>
       </Modal>
 
+      {/* ── Modal: গরুকে খাবার দিন ── */}
       <Modal isOpen={showFeedCattle} onClose={closeFeedModal} title="গরুকে খাবার দিন" size="sm">
         <div className="space-y-4">
           <div className="bg-sky-500/10 border border-sky-500/20 p-3 rounded-lg">
             <p className="text-xs text-sky-400">এখান থেকে খাবার এন্ট্রি দিলে তা অটোমেটিক গুদাম থেকে কমে যাবে।</p>
           </div>
           <Field label="খাদ্যের ধরন">
-            <Select>
+            <Select value={feedForm.type} onChange={(e) => setFeedForm({...feedForm, type: e.target.value})}>
               {FEED_TYPES.map(f => <option key={f} value={f}>{f}</option>)}
             </Select>
           </Field>
-          <Field label="পরিমাণ (kg)"><Input type="number" placeholder="কত কেজি খাওয়ানো হলো?" /></Field>
+          <Field label="পরিমাণ (kg)"><Input type="number" placeholder="কত কেজি খাওয়ানো হলো?" value={feedForm.amount} onChange={(e) => setFeedForm({...feedForm, amount: e.target.value})} /></Field>
           
           <Field label="কাকে খাওয়ানো হলো?">
             <Select value={feedTargetType} onChange={(e) => setFeedTargetType(e.target.value)}>
@@ -168,7 +216,7 @@ export default function FeedInventory() {
             </Select>
           </Field>
 
-          {/* ── কন্ডিশনাল ফিল্ড: 'নির্দিষ্ট গরুকে' সিলেক্ট করলেই এটি আসবে ── */}
+          {/* ── কন্ডিশনাল ফিল্ড ── */}
           {feedTargetType === "single" && (
             <Field label="গরু নির্বাচন করুন">
               <Select value={selectedCattleId} onChange={(e) => setSelectedCattleId(e.target.value)}>
@@ -180,10 +228,10 @@ export default function FeedInventory() {
             </Field>
           )}
 
-          <Field label="তারিখ"><Input type="date" defaultValue={new Date().toISOString().slice(0,10)} /></Field>
+          <Field label="তারিখ"><Input type="date" value={feedForm.date} onChange={(e) => setFeedForm({...feedForm, date: e.target.value})} /></Field>
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={closeFeedModal}>বাতিল</Button>
-            <Button className="bg-emerald-500 text-white">🥣 নিশ্চিত করুন</Button>
+            <Button className="bg-emerald-500 text-white" onClick={handleSaveFeed}>🥣 নিশ্চিত করুন</Button>
           </div>
         </div>
       </Modal>
