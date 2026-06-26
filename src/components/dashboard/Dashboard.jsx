@@ -13,6 +13,12 @@ export default function Dashboard() {
 
   const fmt = (n) => n.toLocaleString(language === "bn" ? "bn-BD" : "en-BD");
 
+  // ডাইনামিকভাবে বর্তমান মাসের নাম বের করার লজিক
+  const currentMonth = new Date().toLocaleString(language === "bn" ? "bn-BD" : "en-US", { month: "long" });
+  
+  // গত মাসের আয়ের সাথে তুলনা (যদি সম্ভব হয়, আপাতত ফিক্সড টেক্সট দিচ্ছি)
+  const incomeTrendText = language === "bn" ? "গত মাসের তুলনায়" : "vs Last month";
+
   return (
     <div className="space-y-5">
       {/* PWA install banner */}
@@ -20,10 +26,42 @@ export default function Dashboard() {
 
       {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label={t("totalCattle")}    value={fmt(stats.totalCattle)}                    icon="🐄" color="amber" />
-        <StatCard label={t("todayMilk")}      value={`${fmt(stats.todayMilk)} L`}               icon="🥛" color="sky" />
-        <StatCard label={t("monthlyIncome")}  value={`৳${fmt(stats.monthlyIncome)}`}             icon="💰" color="emerald" trend={1} trendLabel={language === "bn" ? "গত মাসের চেয়ে বেশি" : "More than last month"} />
-        <StatCard label={t("netProfit")}      value={`৳${fmt(stats.netProfit)}`}                 icon={stats.netProfit >= 0 ? "📈" : "📉"} color={stats.netProfit >= 0 ? "emerald" : "red"} />
+        <StatCard 
+          label={t("totalCattle")}    
+          value={fmt(stats.totalCattle)}                    
+          icon="🐄" color="amber" 
+        />
+        
+        <StatCard 
+          label={t("todayMilk")}      
+          value={`${fmt(stats.todayMilk)} L`}               
+          icon="🥛" color="sky" 
+        />
+        
+        {/* ডাইনামিক মাসের নাম সহ আয় */}
+        <StatCard 
+          label={`${currentMonth} ${language === "bn" ? "মাসের আয়" : "Income"}`} 
+          value={`৳${fmt(stats.monthlyIncome)}`}             
+          icon="💰" color="emerald" 
+          trend={1} trendLabel={incomeTrendText} 
+        />
+        
+        {/* নিট লাভের জন্য বিশেষ ডিজাইন (Border & Background highlighting) */}
+        <div className={`relative overflow-hidden rounded-xl border-2 p-5 transition-all ${stats.netProfit >= 0 ? "bg-emerald-400/10 border-emerald-500/30" : "bg-red-400/10 border-red-500/30"}`}>
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-slate-400 font-medium text-xs mb-1">{t("netProfit")}</p>
+              <h3 className={`text-2xl font-bold ${stats.netProfit >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                ৳{fmt(stats.netProfit)}
+              </h3>
+            </div>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl bg-slate-800/50 shadow-inner`}>
+              {stats.netProfit >= 0 ? "📈" : "📉"}
+            </div>
+          </div>
+          {/* Decorative glow */}
+          <div className={`absolute -right-6 -bottom-6 w-24 h-24 blur-2xl rounded-full opacity-20 ${stats.netProfit >= 0 ? "bg-emerald-500" : "bg-red-500"}`}></div>
+        </div>
       </div>
 
       {/* Charts */}
