@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useApp } from "../../contexts/AppContext";
-import { useLanguage } from "../../contexts/LanguageContext"; // ── নতুন যুক্ত করা হয়েছে ──
+import { useLanguage } from "../../contexts/LanguageContext";
 import Modal from "../ui/Modal";
 import Button from "../ui/Button";
 import ConfirmDialog from "../ui/ConfirmDialog";
@@ -10,12 +10,6 @@ const ROLE_STYLES = {
   admin:       "bg-amber-400/10  text-amber-400  border-amber-400/20",
   worker:      "bg-sky-400/10   text-sky-400   border-sky-400/20",
   shareholder: "bg-purple-400/10 text-purple-400 border-purple-400/20",
-};
-
-const ROLE_PERMISSIONS = {
-  admin:       ["ড্যাশবোর্ড", "গরুর তালিকা (পড়া+লেখা)", "দুধের হিসাব (পড়া+লেখা)", "আয়-ব্যয় (পড়া+লেখা)", "রিপোর্ট", "ব্যবহারকারী ব্যবস্থাপনা"],
-  worker:      ["ড্যাশবোর্ড", "গরুর তালিকা (পড়া+লেখা)", "দুধের হিসাব (পড়া+লেখা)", "আয়-ব্যয় (পড়া+লেখা)"],
-  shareholder: ["ড্যাশবোর্ড (সারসংক্ষেপ)", "রিপোর্ট দেখা", "PDF ডাউনলোড"],
 };
 
 const Input  = (p) => <input  {...p} className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400/60 placeholder-slate-500" />;
@@ -27,9 +21,21 @@ const EMPTY = { name: "", role: "worker", pin: "", phone: "" };
 export default function UserManagement() {
   const { users, currentUser, addUser, updateUser, deleteUser, toggleUserActive } = useAuth();
   const { addToast } = useApp();
-  const { t } = useLanguage(); // ── অনুবাদ আনার ফাংশন ──
+  const { t, language } = useLanguage(); 
 
-  // ডায়নামিক রোল লেবেল (ভাষা পরিবর্তনের সাথে সাথে বদলাবে)
+  // ভাষা অনুযায়ী পারমিশন লিস্ট
+  const ROLE_PERMISSIONS = {
+    admin: language === "bn" 
+      ? ["ড্যাশবোর্ড", "গরুর তালিকা (পড়া+লেখা)", "দুধের হিসাব (পড়া+লেখা)", "আয়-ব্যয় (পড়া+লেখা)", "রিপোর্ট", "ব্যবহারকারী ব্যবস্থাপনা"]
+      : ["Dashboard", "Cattle List (Read+Write)", "Milk Logs (Read+Write)", "Finance (Read+Write)", "Reports", "User Management"],
+    worker: language === "bn"
+      ? ["ড্যাশবোর্ড", "গরুর তালিকা (পড়া+লেখা)", "দুধের হিসাব (পড়া+লেখা)", "আয়-ব্যয় (পড়া+লেখা)"]
+      : ["Dashboard", "Cattle List (Read+Write)", "Milk Logs (Read+Write)", "Finance (Read+Write)"],
+    shareholder: language === "bn"
+      ? ["ড্যাশবোর্ড (সারসংক্ষেপ)", "রিপোর্ট দেখা", "PDF ডাউনলোড"]
+      : ["Dashboard (Summary)", "View Reports", "Download PDF"],
+  };
+
   const ROLE_LABELS = { admin: t("admin"), worker: t("worker"), shareholder: t("shareholder") };
 
   const [showForm,     setShowForm]     = useState(false);
@@ -55,13 +61,13 @@ export default function UserManagement() {
   }, [form.phone, editTarget]);
 
   const handleSave = async () => {
-    if (!form.name.trim()) return setFormErr("নাম দিতে হবে");
+    if (!form.name.trim()) return setFormErr(language === "bn" ? "নাম দিতে হবে" : "Name is required");
     
     if ((form.role === "worker" || form.role === "shareholder") && !form.phone.trim()) {
-      return setFormErr("কর্মী বা শেয়ারহোল্ডারদের জন্য ফোন নাম্বার দেওয়া বাধ্যতামূলক");
+      return setFormErr(language === "bn" ? "কর্মী বা শেয়ারহোল্ডারদের জন্য ফোন নাম্বার দেওয়া বাধ্যতামূলক" : "Phone number is required for Worker or Shareholder");
     }
 
-    if (form.pin.length < 4) return setFormErr("পিন কমপক্ষে ৪ সংখ্যার হতে হবে");
+    if (form.pin.length < 4) return setFormErr(language === "bn" ? "পিন কমপক্ষে ৪ সংখ্যার হতে হবে" : "PIN must be at least 4 digits");
 
     if (editTarget) {
       const res = await updateUser(editTarget._id || editTarget.id, form);
@@ -102,10 +108,10 @@ export default function UserManagement() {
           <div key={role} className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 cursor-pointer hover:border-slate-600 transition-colors" onClick={() => setShowPerms(role)}>
             <div className="flex items-center justify-between mb-2">
               <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${ROLE_STYLES[role]}`}>{ROLE_LABELS[role]}</span>
-              <span className="text-slate-500 text-xs">{users.filter((u) => u.role === role && u.active !== false).length} {t("activeUsers")}</span>
+              <span className="text-slate-500 text-xs">{users.filter((u) => u.role === role && u.active !== false).length} {language === "bn" ? "সক্রিয়" : "Active"}</span>
             </div>
             <p className="text-slate-400 text-xs">{ROLE_PERMISSIONS[role][0]}...</p>
-            <p className="text-amber-400/60 text-xs mt-1">{t("viewDetailsArrow")}</p>
+            <p className="text-amber-400/60 text-xs mt-1">{language === "bn" ? "বিস্তারিত দেখুন →" : "View Details →"}</p>
           </div>
         ))}
       </div>
@@ -113,7 +119,7 @@ export default function UserManagement() {
       {/* Users table */}
       <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-700/40">
-          <p className="text-white font-semibold text-sm">{t("allUsers")}</p>
+          <p className="text-white font-semibold text-sm">{language === "bn" ? "সকল ব্যবহারকারী" : "All Users"}</p>
         </div>
         <div className="divide-y divide-slate-700/30">
           {users.map((u) => {
@@ -130,13 +136,13 @@ export default function UserManagement() {
                     <div className="flex items-center gap-2">
                       <span className={`text-sm font-medium ${u.active === false ? "text-slate-500 line-through" : "text-white"}`}>{u.name}</span>
                       {isMe && (
-                        <span className="text-xs px-1.5 py-0.5 bg-amber-400/10 text-amber-400 rounded border border-amber-400/20">{t("you")}</span>
+                        <span className="text-xs px-1.5 py-0.5 bg-amber-400/10 text-amber-400 rounded border border-amber-400/20">{language === "bn" ? "আপনি" : "You"}</span>
                       )}
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className={`text-xs px-2 py-0.5 rounded-full border ${ROLE_STYLES[u.role]}`}>{ROLE_LABELS[u.role]}</span>
                       {u.phone && <span className="text-slate-500 text-xs">📞 {u.phone}</span>}
-                      {u.createdAt && <span className="text-slate-600 text-xs">{t("joined")} {u.createdAt}</span>}
+                      {u.createdAt && <span className="text-slate-600 text-xs">{language === "bn" ? "যুক্ত হয়েছেন:" : "Joined:"} {u.createdAt}</span>}
                     </div>
                   </div>
                 </div>
@@ -144,7 +150,7 @@ export default function UserManagement() {
                 <div className="flex items-center gap-1.5">
                   {!isMe && (
                     <button onClick={() => toggleUserActive(u._id || u.id)} className={`px-2 py-1 rounded text-xs transition-all ${u.active === false ? "text-emerald-400 hover:bg-emerald-400/10" : "text-slate-400 hover:bg-slate-700/50"}`}>
-                      {u.active === false ? `✓ ${t("active")}` : `⏸ ${t("inactive")}`}
+                      {u.active === false ? `✓ ${language === "bn" ? "সক্রিয় করুন" : "Activate"}` : `⏸ ${language === "bn" ? "নিষ্ক্রিয় করুন" : "Deactivate"}`}
                     </button>
                   )}
                   <button onClick={() => openEdit(u)} className="px-2 py-1 rounded text-xs text-sky-400 hover:bg-sky-400/10 transition-all">✏️ {t("edit")}</button>
@@ -162,24 +168,26 @@ export default function UserManagement() {
       {/* Add/Edit Modal */}
       <Modal isOpen={showForm || !!editTarget} onClose={closeAll} title={editTarget ? `${t("edit")}: ${editTarget.name}` : t("newUser")}>
         <div className="space-y-4">
-          <Field label={t("fullName")}><Input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Name" /></Field>
-          <Field label={form.role === "admin" ? `${t("phone")} (Optional)` : `${t("phone")} *`}>
+          <Field label={language === "bn" ? "পুরো নাম" : "Full Name"}>
+            <Input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder={language === "bn" ? "নাম লিখুন" : "Enter Name"} />
+          </Field>
+          <Field label={form.role === "admin" ? `${language === "bn" ? "ফোন (ঐচ্ছিক)" : "Phone (Optional)"}` : `${language === "bn" ? "ফোন *" : "Phone *"}`}>
             <Input type="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="01XXXXXXXXX" />
           </Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field label={`${t("role")} *`}>
+            <Field label={`${language === "bn" ? "রোল *" : "Role *"}`}>
               <Select value={form.role} onChange={(e) => set("role", e.target.value)}>
                 <option value="admin">{t("admin")}</option>
                 <option value="worker">{t("worker")}</option>
                 <option value="shareholder">{t("shareholder")}</option>
               </Select>
             </Field>
-            <Field label={`${t("pin")} *`}>
+            <Field label={`${language === "bn" ? "পিন *" : "PIN *"}`}>
               <Input type="text" value={form.pin} onChange={(e) => set("pin", e.target.value)} placeholder="PIN" maxLength={6} />
             </Field>
           </div>
           <div className="bg-slate-700/30 rounded-lg p-3 mt-4">
-            <p className="text-slate-400 text-xs font-semibold mb-2">{ROLE_LABELS[form.role]} — Access:</p>
+            <p className="text-slate-400 text-xs font-semibold mb-2">{ROLE_LABELS[form.role]} — {language === "bn" ? "অ্যাক্সেস পাবে:" : "Access to:"}</p>
             <ul className="space-y-1">
               {ROLE_PERMISSIONS[form.role].map((p) => <li key={p} className="text-slate-300 text-xs flex items-center gap-1.5"><span className="text-emerald-400">✓</span> {p}</li>)}
             </ul>
@@ -206,7 +214,7 @@ export default function UserManagement() {
       </Modal>
 
       {/* Delete confirm */}
-      <ConfirmDialog isOpen={!!deleteTarget} message={`"${deleteTarget?.name}" ${t("delete")}?`} onCancel={() => setDeleteTarget(null)} onConfirm={handleDelete} />
+      <ConfirmDialog isOpen={!!deleteTarget} message={`"${deleteTarget?.name}" ${language === "bn" ? "মুছে ফেলতে চান?" : "delete?"}`} onCancel={() => setDeleteTarget(null)} onConfirm={handleDelete} />
     </div>
   );
 }

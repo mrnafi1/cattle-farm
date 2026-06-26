@@ -2,7 +2,7 @@ import { useLanguage } from "../../contexts/LanguageContext";
 import { useAuth } from "../../contexts/AuthContext";
 
 const NAV = [
-  { key: "dashboard", icon: "⊞",  page: "dashboard",  minRole: "shareholder" },
+  { key: "dashboard", icon: "⊞",  page: "dashboard",   minRole: "shareholder" },
   { key: "cattle",    icon: "🐄", page: "cattle",     minRole: "worker" },
   { key: "dairy",     icon: "🥛", page: "dairy",      minRole: "worker" },
   { key: "feed",      icon: "🌾", page: "feed",       minRole: "worker" },
@@ -12,8 +12,8 @@ const NAV = [
 ];
 
 const ROLE_STYLES = {
-  admin:       "text-amber-400 bg-amber-400/10 border-amber-400/20",
-  worker:      "text-sky-400   bg-sky-400/10   border-sky-400/20",
+  admin:       "text-amber-400 bg-amber-400/10  border-amber-400/20",
+  worker:      "text-sky-400    bg-sky-400/10   border-sky-400/20",
   shareholder: "text-purple-400 bg-purple-400/10 border-purple-400/20",
 };
 
@@ -23,14 +23,15 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
 
   const visibleNav = NAV.filter((item) => hasAccess(item.minRole));
 
+  // মেনুর নামগুলো ডাইনামিক করা হলো
   const navLabels = {
     dashboard: t("dashboard"),
     cattle:    t("cattle"),
     dairy:     t("dairy"),
-    feed:      "খাবার ও গুদাম",
+    feed:      t("feedInventory"), // t() ব্যবহার করা হলো
     finance:   t("finance"),
     reports:   t("reports"),
-    settings:  "সেটিংস",
+    settings:  t("settings"),
   };
 
   return (
@@ -95,7 +96,7 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
             <div className="flex-1 min-w-0">
               <p className="text-white text-sm font-medium truncate">{currentUser?.name}</p>
               <span className={`inline-block text-xs px-2 py-0.5 rounded-full border mt-0.5 ${ROLE_STYLES[currentUser?.role]}`}>
-                {currentUser?.role === "admin" ? "অ্যাডমিন" : currentUser?.role === "worker" ? "কর্মী" : "শেয়ারহোল্ডার"}
+                {t(currentUser?.role)}
               </span>
             </div>
           </div>
