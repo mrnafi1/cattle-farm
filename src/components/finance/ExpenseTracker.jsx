@@ -77,16 +77,16 @@ export default function ExpenseTracker() {
         )}
       </div>
 
-      {/* Summary */}
-      <div className="grid grid-cols-3 gap-4">
+      {/* Summary - এখানে গ্রিড এবং ট্রাঙ্কেট লজিক আপডেট করা হয়েছে */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
         {[
-          { label: t("monthlyIncome"),  value: `৳${fmt(stats.monthlyIncome)}`,  color: "text-emerald-400", border: "border-emerald-500/20" },
-          { label: t("monthlyExpense"), value: `৳${fmt(stats.monthlyExpense)}`, color: "text-red-400",     border: "border-red-500/20" },
-          { label: t("netProfit"),      value: `৳${fmt(stats.netProfit)}`,      color: stats.netProfit >= 0 ? "text-amber-400" : "text-red-400", border: "border-amber-500/20" },
+          { label: t("monthlyIncome"),  value: `৳${fmt(stats.monthlyIncome)}`,  color: "text-emerald-400", border: "border-emerald-500/20", col: "col-span-1" },
+          { label: t("monthlyExpense"), value: `৳${fmt(stats.monthlyExpense)}`, color: "text-red-400",     border: "border-red-500/20", col: "col-span-1" },
+          { label: t("netProfit"),      value: `৳${fmt(stats.netProfit)}`,      color: stats.netProfit >= 0 ? "text-amber-400" : "text-red-400", border: "border-amber-500/20", col: "col-span-2 sm:col-span-1" },
         ].map((s) => (
-          <div key={s.label} className={`bg-slate-800/40 border ${s.border} rounded-xl p-4 text-center`}>
-            <p className="text-slate-400 text-xs mb-1">{s.label}</p>
-            <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
+          <div key={s.label} className={`bg-slate-800/40 border ${s.border} rounded-xl p-3 sm:p-4 text-center min-w-0 ${s.col}`}>
+            <p className="text-slate-400 text-xs mb-1 truncate" title={s.label}>{s.label}</p>
+            <p className={`text-lg sm:text-xl font-bold truncate ${s.color}`} title={s.value}>{s.value}</p>
           </div>
         ))}
       </div>

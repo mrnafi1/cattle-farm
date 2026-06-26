@@ -47,15 +47,21 @@ export default function Dashboard() {
         />
         
         {/* নিট লাভের জন্য বিশেষ ডিজাইন (Border & Background highlighting) */}
-        <div className={`relative overflow-hidden rounded-xl border-2 p-5 transition-all ${stats.netProfit >= 0 ? "bg-emerald-400/10 border-emerald-500/30" : "bg-red-400/10 border-red-500/30"}`}>
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-slate-400 font-medium text-xs mb-1">{t("netProfit")}</p>
-              <h3 className={`text-2xl font-bold ${stats.netProfit >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+        {/* min-w-0 যুক্ত করা হলো যাতে কার্ডটি ওভারফ্লো না করে */}
+        <div className={`relative overflow-hidden rounded-xl border-2 p-5 transition-all min-w-0 ${stats.netProfit >= 0 ? "bg-emerald-400/10 border-emerald-500/30" : "bg-red-400/10 border-red-500/30"}`}>
+          {/* gap-2 যোগ করা হলো যাতে আইকন ও লেখার মাঝে ফাঁকা থাকে */}
+          <div className="flex items-start justify-between gap-2">
+            
+            {/* min-w-0 এবং flex-1 দিয়ে টেক্সটকে কন্ট্রোল করা হলো */}
+            <div className="min-w-0 flex-1">
+              <p className="text-slate-400 font-medium text-xs mb-1 truncate" title={t("netProfit")}>{t("netProfit")}</p>
+              <h3 className={`text-2xl font-bold truncate ${stats.netProfit >= 0 ? "text-emerald-400" : "text-red-400"}`} title={`৳${fmt(stats.netProfit)}`}>
                 ৳{fmt(stats.netProfit)}
               </h3>
             </div>
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl bg-slate-800/50 shadow-inner`}>
+            
+            {/* flex-shrink-0 দিয়ে আইকনের সাইজ ঠিক রাখা হলো */}
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl bg-slate-800/50 shadow-inner flex-shrink-0`}>
               {stats.netProfit >= 0 ? "📈" : "📉"}
             </div>
           </div>
