@@ -36,8 +36,12 @@ export default function AddCattleForm({ onClose }) {
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = async () => { // ফাংশনটিকে async করা হলো
-    // ১. ডাটাবেসে পাঠানোর জন্য ডেটা প্রস্তুত করা
+ const handleSubmit = async () => {
+    if (!form.tagId) {
+      alert("দয়া করে ট্যাগ আইডি দিন!");
+      return;
+    }
+
     const newCattleData = {
       ...form,
       age: Number(form.age),
@@ -48,30 +52,12 @@ export default function AddCattleForm({ onClose }) {
       vaccineHistory: [],
     };
 
-    try {
-      // ২. ব্যাকএন্ড এপিআই-তে POST রিকোয়েস্ট পাঠানো
-      const response = await fetch("https://cattle-farm-server.onrender.com/cattles", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-        },
-        body: JSON.stringify(newCattleData), // ডেটাকে JSON ফরম্যাটে রূপান্তর
-      });
-
-      const data = await response.json();
-
-      if (data.acknowledged) {
-        // ৩. ডাটাবেসে সফলভাবে সেভ হলে লোকাল UI আপডেট করা
-        addCattle({ ...newCattleData, _id: data.insertedId });
-        alert("সফলভাবে ডাটাবেসে সেভ হয়েছে!");
-        onClose();
-      }
-    } catch (error) {
-      console.error("Error saving cattle:", error);
-      alert("ডাটাবেসে সেভ করতে সমস্যা হয়েছে!");
+    // এখন শুধু কনটেক্সট থেকে addCattle কল হবে
+    const res = await addCattle(newCattleData);
+    if (res?.success) {
+      onClose();
     }
   };
-
   const pct = ((step + 1) / STEPS.length) * 100;
 
   return (

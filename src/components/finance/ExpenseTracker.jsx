@@ -7,7 +7,6 @@ import Modal from "../ui/Modal";
 import ConfirmDialog from "../ui/ConfirmDialog";
 
 const CAT_ICONS = { feed: "🌾", medical: "💊", labor: "👷", electricity: "⚡", other: "📦" };
-const CAT_NAMES = { feed: "গো-খাদ্য", medical: "চিকিৎসা", labor: "শ্রমিক বেতন", electricity: "বিদ্যুৎ", other: "অন্যান্য" };
 
 const Input = (props) => (
   <input {...props} className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400/60 placeholder-slate-500" />
@@ -20,9 +19,8 @@ const EMPTY_EXP = { date: new Date().toISOString().slice(0, 10), category: "feed
 const EMPTY_INC = { date: new Date().toISOString().slice(0, 10), source: "milk", amount: "", description: "" };
 
 export default function ExpenseTracker() {
-  // নতুন ফাংশনগুলো রিসিভ করা হলো
   const { expenses, incomes, addExpense, updateExpense, deleteExpense, addIncome, updateIncome, deleteIncome, stats } = useApp();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { hasAccess } = useAuth();
 
   const [tab, setTab] = useState("expense"); 
@@ -49,7 +47,6 @@ export default function ExpenseTracker() {
   const closeExp = () => { setShowExpForm(false); setEditExp(null); setExpForm(EMPTY_EXP); };
   const closeInc = () => { setShowIncForm(false); setEditInc(null); setIncForm(EMPTY_INC); };
 
-  // MongoDB এর জন্য _id ব্যবহার করা হলো
   const saveExp = () => {
     const d = { ...expForm, amount: Number(expForm.amount) };
     editExp ? updateExpense(editExp._id || editExp.id, d) : addExpense(d);
@@ -62,18 +59,20 @@ export default function ExpenseTracker() {
     closeInc();
   };
 
+  const fmt = (n) => n.toLocaleString(language === "bn" ? "bn-BD" : "en-BD");
+
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold text-white">{t("finance")}</h2>
-          <p className="text-slate-500 text-sm">আয় ও ব্যয়ের বিস্তারিত হিসাব</p>
+          <p className="text-slate-500 text-sm">{language === "bn" ? "আয় ও ব্যয়ের বিস্তারিত হিসাব" : "Income and Expense Details"}</p>
         </div>
         {canEdit && (
           <div className="flex gap-2">
-            <Button variant="secondary" size="sm" onClick={() => setShowIncForm(true)}>+ আয়</Button>
-            <Button size="sm" onClick={() => setShowExpForm(true)}>+ খরচ</Button>
+            <Button variant="secondary" size="sm" onClick={() => setShowIncForm(true)}>+ {t("income")}</Button>
+            <Button size="sm" onClick={() => setShowExpForm(true)}>+ {t("expense")}</Button>
           </div>
         )}
       </div>
@@ -81,9 +80,9 @@ export default function ExpenseTracker() {
       {/* Summary */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: t("monthlyIncome"),  value: `৳${stats.monthlyIncome.toLocaleString("bn-BD")}`,  color: "text-emerald-400", border: "border-emerald-500/20" },
-          { label: t("monthlyExpense"), value: `৳${stats.monthlyExpense.toLocaleString("bn-BD")}`, color: "text-red-400",     border: "border-red-500/20" },
-          { label: t("netProfit"),      value: `৳${stats.netProfit.toLocaleString("bn-BD")}`,      color: stats.netProfit >= 0 ? "text-amber-400" : "text-red-400", border: "border-amber-500/20" },
+          { label: t("monthlyIncome"),  value: `৳${fmt(stats.monthlyIncome)}`,  color: "text-emerald-400", border: "border-emerald-500/20" },
+          { label: t("monthlyExpense"), value: `৳${fmt(stats.monthlyExpense)}`, color: "text-red-400",     border: "border-red-500/20" },
+          { label: t("netProfit"),      value: `৳${fmt(stats.netProfit)}`,      color: stats.netProfit >= 0 ? "text-amber-400" : "text-red-400", border: "border-amber-500/20" },
         ].map((s) => (
           <div key={s.label} className={`bg-slate-800/40 border ${s.border} rounded-xl p-4 text-center`}>
             <p className="text-slate-400 text-xs mb-1">{s.label}</p>
@@ -94,7 +93,7 @@ export default function ExpenseTracker() {
 
       {/* Tab */}
       <div className="flex gap-1 bg-slate-800/60 rounded-xl p-1 w-fit">
-        {[{ key: "expense", label: "💸 খরচ" }, { key: "income", label: "💰 আয়" }].map((tb) => (
+        {[{ key: "expense", label: `💸 ${t("expense")}` }, { key: "income", label: `💰 ${t("income")}` }].map((tb) => (
           <button key={tb.key} onClick={() => setTab(tb.key)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               tab === tb.key ? "bg-amber-400/15 text-amber-400 border border-amber-400/20" : "text-slate-400 hover:text-slate-200"
@@ -111,7 +110,7 @@ export default function ExpenseTracker() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-700/50">
-                  {["তারিখ", "বিভাগ", "বিবরণ", "পরিমাণ", "অ্যাকশন"].map((h) => (
+                  {[t("date"), t("category"), t("description"), t("amount"), t("action")].map((h) => (
                     <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase">{h}</th>
                   ))}
                 </tr>
@@ -122,14 +121,14 @@ export default function ExpenseTracker() {
                     <td className="px-4 py-3 text-slate-400 text-sm">{e.date}</td>
                     <td className="px-4 py-3">
                       <span className="flex items-center gap-1.5 text-sm text-slate-300">
-                        {CAT_ICONS[e.category]} {CAT_NAMES[e.category]}
+                        {CAT_ICONS[e.category]} {t(e.category)}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-slate-300 text-sm max-w-[160px] truncate">{e.description}</td>
-                    <td className="px-4 py-3 text-red-400 font-semibold text-sm">-৳{e.amount.toLocaleString("bn-BD")}</td>
+                    <td className="px-4 py-3 text-red-400 font-semibold text-sm">-৳{fmt(e.amount)}</td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1">
-                        {canEdit   && <button onClick={() => openEditExp(e)} className="px-2 py-1 rounded text-xs text-sky-400 hover:bg-sky-400/10">✏️ এডিট</button>}
+                        {canEdit   && <button onClick={() => openEditExp(e)} className="px-2 py-1 rounded text-xs text-sky-400 hover:bg-sky-400/10">✏️ {t("edit")}</button>}
                         {canDelete && <button onClick={() => setDeleteExp(e)} className="px-2 py-1 rounded text-xs text-red-400 hover:bg-red-400/10">🗑️</button>}
                       </div>
                     </td>
@@ -148,7 +147,7 @@ export default function ExpenseTracker() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-700/50">
-                  {["তারিখ", "উৎস", "বিবরণ", "পরিমাণ", "অ্যাকশন"].map((h) => (
+                  {[t("date"), t("source"), t("description"), t("amount"), t("action")].map((h) => (
                     <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase">{h}</th>
                   ))}
                 </tr>
@@ -159,10 +158,10 @@ export default function ExpenseTracker() {
                     <td className="px-4 py-3 text-slate-400 text-sm">{i.date}</td>
                     <td className="px-4 py-3 text-slate-300 text-sm">💰 {i.source}</td>
                     <td className="px-4 py-3 text-slate-300 text-sm max-w-[160px] truncate">{i.description}</td>
-                    <td className="px-4 py-3 text-emerald-400 font-semibold text-sm">+৳{i.amount.toLocaleString("bn-BD")}</td>
+                    <td className="px-4 py-3 text-emerald-400 font-semibold text-sm">+৳{fmt(i.amount)}</td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1">
-                        {canEdit   && <button onClick={() => openEditInc(i)} className="px-2 py-1 rounded text-xs text-sky-400 hover:bg-sky-400/10">✏️ এডিট</button>}
+                        {canEdit   && <button onClick={() => openEditInc(i)} className="px-2 py-1 rounded text-xs text-sky-400 hover:bg-sky-400/10">✏️ {t("edit")}</button>}
                         {canDelete && <button onClick={() => setDeleteInc(i)} className="px-2 py-1 rounded text-xs text-red-400 hover:bg-red-400/10">🗑️</button>}
                       </div>
                     </td>
@@ -174,44 +173,40 @@ export default function ExpenseTracker() {
         </div>
       )}
 
-      {/* Expense Add/Edit Modal */}
-      <Modal isOpen={showExpForm || !!editExp} onClose={closeExp} title={editExp ? "খরচ এডিট করুন" : "নতুন খরচ"}>
+      {/* Modals */}
+      <Modal isOpen={showExpForm || !!editExp} onClose={closeExp} title={editExp ? t("edit") : t("addExpense")}>
         <div className="space-y-3">
-          <Field label="তারিখ"><Input type="date" value={expForm.date} onChange={(e) => setE("date", e.target.value)} /></Field>
-          <Field label="বিভাগ">
+          <Field label={t("date")}><Input type="date" value={expForm.date} onChange={(e) => setE("date", e.target.value)} /></Field>
+          <Field label={t("category")}>
             <select value={expForm.category} onChange={(e) => setE("category", e.target.value)}
               className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400/60">
-              {Object.entries(CAT_NAMES).map(([k, v]) => <option key={k} value={k}>{CAT_ICONS[k]} {v}</option>)}
+              {Object.keys(CAT_ICONS).map((k) => <option key={k} value={k}>{CAT_ICONS[k]} {t(k)}</option>)}
             </select>
           </Field>
-          <Field label="পরিমাণ (৳)"><Input type="number" value={expForm.amount} onChange={(e) => setE("amount", e.target.value)} placeholder="5000" /></Field>
-          <Field label="বিবরণ"><Input value={expForm.description} onChange={(e) => setE("description", e.target.value)} placeholder="বিবরণ লিখুন" /></Field>
+          <Field label={t("amount")}><Input type="number" value={expForm.amount} onChange={(e) => setE("amount", e.target.value)} placeholder="5000" /></Field>
+          <Field label={t("description")}><Input value={expForm.description} onChange={(e) => setE("description", e.target.value)} placeholder={t("description")} /></Field>
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" onClick={closeExp}>বাতিল</Button>
-            <Button onClick={saveExp}>💾 সংরক্ষণ</Button>
+            <Button variant="secondary" onClick={closeExp}>{t("cancel")}</Button>
+            <Button onClick={saveExp}>💾 {t("save")}</Button>
           </div>
         </div>
       </Modal>
 
-      {/* Income Add/Edit Modal */}
-      <Modal isOpen={showIncForm || !!editInc} onClose={closeInc} title={editInc ? "আয় এডিট করুন" : "নতুন আয়"}>
+      <Modal isOpen={showIncForm || !!editInc} onClose={closeInc} title={editInc ? t("edit") : t("addIncome")}>
         <div className="space-y-3">
-          <Field label="তারিখ"><Input type="date" value={incForm.date} onChange={(e) => setI("date", e.target.value)} /></Field>
-          <Field label="উৎস"><Input value={incForm.source} onChange={(e) => setI("source", e.target.value)} placeholder="দুধ বিক্রি, গরু বিক্রি..." /></Field>
-          <Field label="পরিমাণ (৳)"><Input type="number" value={incForm.amount} onChange={(e) => setI("amount", e.target.value)} placeholder="20000" /></Field>
-          <Field label="বিবরণ"><Input value={incForm.description} onChange={(e) => setI("description", e.target.value)} placeholder="বিবরণ লিখুন" /></Field>
+          <Field label={t("date")}><Input type="date" value={incForm.date} onChange={(e) => setI("date", e.target.value)} /></Field>
+          <Field label={t("source")}><Input value={incForm.source} onChange={(e) => setI("source", e.target.value)} placeholder={t("source")} /></Field>
+          <Field label={t("amount")}><Input type="number" value={incForm.amount} onChange={(e) => setI("amount", e.target.value)} placeholder="20000" /></Field>
+          <Field label={t("description")}><Input value={incForm.description} onChange={(e) => setI("description", e.target.value)} placeholder={t("description")} /></Field>
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" onClick={closeInc}>বাতিল</Button>
-            <Button onClick={saveInc}>💾 সংরক্ষণ</Button>
+            <Button variant="secondary" onClick={closeInc}>{t("cancel")}</Button>
+            <Button onClick={saveInc}>💾 {t("save")}</Button>
           </div>
         </div>
       </Modal>
 
-      {/* Confirm Dialogs */}
-      <ConfirmDialog isOpen={!!deleteExp} message={`"${deleteExp?.description}" খরচটি মুছে ফেলবেন?`}
-        onCancel={() => setDeleteExp(null)} onConfirm={() => { deleteExpense(deleteExp._id || deleteExp.id); setDeleteExp(null); }} />
-      <ConfirmDialog isOpen={!!deleteInc} message={`"${deleteInc?.description}" আয়টি মুছে ফেলবেন?`}
-        onCancel={() => setDeleteInc(null)} onConfirm={() => { deleteIncome(deleteInc._id || deleteInc.id); setDeleteInc(null); }} />
+      <ConfirmDialog isOpen={!!deleteExp} message={t("confirm")} onCancel={() => setDeleteExp(null)} onConfirm={() => { deleteExpense(deleteExp._id || deleteExp.id); setDeleteExp(null); }} />
+      <ConfirmDialog isOpen={!!deleteInc} message={t("confirm")} onCancel={() => setDeleteInc(null)} onConfirm={() => { deleteIncome(deleteInc._id || deleteInc.id); setDeleteInc(null); }} />
     </div>
   );
 }
