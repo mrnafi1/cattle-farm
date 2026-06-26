@@ -11,9 +11,8 @@ import AddCattleForm from "./AddCattleForm";
 import EditCattleForm from "./EditCattleForm";
 
 export default function CattleList() {
-  // deleteCattle ফাংশনটি AppContext থেকে রিসিভ করা হয়েছে
   const { cattle, deleteCattle, fetchRealCattleData, sellCattle, markCattleDead } = useApp(); 
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { hasAccess } = useAuth();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -25,7 +24,7 @@ export default function CattleList() {
   const [editingCattle, setEditingCattle] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
   
-  const [deleteTarget, setDeleteTarget] = useState(null); // ডিলিট করার স্টেট
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [sellTarget, setSellTarget] = useState(null);
   const [deadTarget, setDeadTarget] = useState(null);
 
@@ -42,7 +41,6 @@ export default function CattleList() {
   const canEdit = hasAccess("worker"); 
   const canDelete = hasAccess("admin"); 
 
-  // বিক্রি ফর্ম হ্যান্ডলার
   const handleSellSubmit = async (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
@@ -54,7 +52,6 @@ export default function CattleList() {
     setSellTarget(null);
   };
 
-  // মৃত্যু ফর্ম হ্যান্ডলার
   const handleDeadSubmit = async (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
@@ -72,7 +69,9 @@ export default function CattleList() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold text-white">{t("cattle")}</h2>
-          <p className="text-slate-500 text-sm">মোট {cattle.length}টি গরু নিবন্ধিত</p>
+          <p className="text-slate-500 text-sm">
+            {cattle.length} {language === "bn" ? "টি গরু নিবন্ধিত" : "cattle registered"}
+          </p>
         </div>
         {canEdit && <Button onClick={() => setShowAddForm(true)}>+ {t("addCattle")}</Button>}
       </div>
@@ -81,18 +80,20 @@ export default function CattleList() {
       <div className="flex flex-wrap gap-3">
         <input type="text" placeholder={`🔍 ${t("search")}...`} value={search} onChange={(e) => setSearch(e.target.value)}
           className="bg-slate-800/60 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400/50 min-w-[180px]" />
+        
         <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
           className="bg-slate-800/60 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-amber-400/50">
-          <option value="all">সব অবস্থা</option>
+          <option value="all">{t("allStatus")}</option>
           <option value="healthy">{t("healthy")}</option>
           <option value="sick">{t("sick")}</option>
           <option value="forSale">{t("forSale")}</option>
-          <option value="sold">বিক্রি হয়েছে</option>
-          <option value="dead">মৃত</option>
+          <option value="sold">{t("soldOut")}</option>
+          <option value="dead">{t("dead")}</option>
         </select>
+        
         <select value={filterType} onChange={(e) => setFilterType(e.target.value)}
           className="bg-slate-800/60 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-amber-400/50">
-          <option value="all">সব ধরন</option>
+          <option value="all">{t("allType")}</option>
           <option value="dairy">{t("dairy")}</option>
           <option value="fattening">{t("fattening")}</option>
         </select>
@@ -104,16 +105,16 @@ export default function CattleList() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-slate-700/50">
-                {["ছবি", "ট্যাগ", "নাম", "জাত", "বয়স", "অবস্থা", "অ্যাকশন"].map((h) => (
+                {[t("image"), t("tag"), t("name"), t("breed"), t("age"), t("status"), t("action")].map((h) => (
                   <th key={h} className="text-left px-3 py-3 text-xs font-semibold text-slate-400 uppercase">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/30">
               {isLoading ? (
-                <tr><td colSpan={7} className="text-center py-12 text-amber-400/80">লোড হচ্ছে...</td></tr>
+                <tr><td colSpan={7} className="text-center py-12 text-amber-400/80">{t("loading")}</td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={7} className="text-center py-12 text-slate-500">কোনো তথ্য নেই</td></tr>
+                <tr><td colSpan={7} className="text-center py-12 text-slate-500">{t("noData")}</td></tr>
               ) : (
                 filtered.map((c) => (
                   <tr key={c._id} className="hover:bg-slate-700/20 transition-colors">
@@ -125,27 +126,20 @@ export default function CattleList() {
                     <td className="px-3 py-2 text-amber-400 font-mono text-sm">{c.tagId}</td>
                     <td className="px-3 py-2 text-white text-sm">{c.name}</td>
                     <td className="px-3 py-2 text-slate-400 text-sm">{c.breed}</td>
-                    <td className="px-3 py-2 text-slate-300 text-sm">{c.age} বছর</td>
-                    <td className="px-3 py-2">
-                      <Badge status={c.status} label={c.status} />
-                    </td>
+                    <td className="px-3 py-2 text-slate-300 text-sm">{c.age} {language === "bn" ? "বছর" : "yrs"}</td>
+                    <td className="px-3 py-2"><Badge status={c.status} label={c.status} /></td>
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-1">
-                        {/* ভিউ বাটন */}
-                        <button onClick={() => setSelectedCattle(c)} className="px-2 py-1 rounded text-xs text-slate-300 hover:bg-slate-600/50" title="বিস্তারিত দেখুন">👁</button>
-                        
+                        <button onClick={() => setSelectedCattle(c)} className="px-2 py-1 rounded text-xs text-slate-300 hover:bg-slate-600/50" title={t("view")}>👁</button>
                         {canEdit && c.status !== "sold" && c.status !== "dead" && (
                           <>
-                            {/* এডিট বাটন */}
-                            <button onClick={() => setEditingCattle(c)} className="px-2 py-1 rounded text-xs text-sky-400 hover:bg-sky-400/10" title="এডিট করুন">✏️</button>
-                            <button onClick={() => setSellTarget(c)} className="px-2 py-1 rounded text-xs text-emerald-400 hover:bg-emerald-400/10" title="বিক্রি করুন">🏷️</button>
-                            <button onClick={() => setDeadTarget(c)} className="px-2 py-1 rounded text-xs text-red-400 hover:bg-red-400/10" title="মৃত মার্ক করুন">☠️</button>
+                            <button onClick={() => setEditingCattle(c)} className="px-2 py-1 rounded text-xs text-sky-400 hover:bg-sky-400/10" title={t("edit")}>✏️</button>
+                            <button onClick={() => setSellTarget(c)} className="px-2 py-1 rounded text-xs text-emerald-400 hover:bg-emerald-400/10" title={t("sellCattleTitle")}>🏷️</button>
+                            <button onClick={() => setDeadTarget(c)} className="px-2 py-1 rounded text-xs text-red-400 hover:bg-red-400/10" title={t("addDeathRecord")}>☠️</button>
                           </>
                         )}
-                        
-                        {/* ── নতুন ডিলিট বাটন (শুধুমাত্র অ্যাডমিনদের জন্য) ── */}
                         {canDelete && (
-                          <button onClick={() => setDeleteTarget(c)} className="px-2 py-1 rounded text-xs text-red-400 hover:bg-red-400/10" title="একেবারে মুছে ফেলুন">🗑️</button>
+                          <button onClick={() => setDeleteTarget(c)} className="px-2 py-1 rounded text-xs text-red-400 hover:bg-red-400/10" title={t("delete")}>🗑️</button>
                         )}
                       </div>
                     </td>
@@ -157,77 +151,56 @@ export default function CattleList() {
         </div>
       </div>
 
-      {/* ── বিক্রি করার ফর্ম (Sale Modal) ── */}
-      <Modal isOpen={!!sellTarget} onClose={() => setSellTarget(null)} title="গরু বিক্রি করুন" size="sm">
+      {/* Modals */}
+      <Modal isOpen={!!sellTarget} onClose={() => setSellTarget(null)} title={t("sellCattleTitle")} size="sm">
         <form onSubmit={handleSellSubmit} className="space-y-4">
-          <div className="bg-slate-700/30 p-3 rounded-lg border border-slate-600/50 mb-4">
-            <p className="text-sm text-slate-300">ট্যাগ: <span className="text-amber-400 font-mono">{sellTarget?.tagId}</span></p>
-            <p className="text-sm text-slate-300">কেনা দাম: ৳{sellTarget?.purchasePrice || 0}</p>
+          <div>
+            <label className="text-slate-400 text-xs block mb-1">{t("buyerName")}</label>
+            <input name="buyerName" required className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm" />
           </div>
           <div>
-            <label className="text-slate-400 text-xs block mb-1">ক্রেতার নাম</label>
-            <input name="buyerName" required className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400" />
+            <label className="text-slate-400 text-xs block mb-1">{t("salePrice")}</label>
+            <input type="number" name="salePrice" required className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm" />
           </div>
           <div>
-            <label className="text-slate-400 text-xs block mb-1">বিক্রয় মূল্য (৳)</label>
-            <input type="number" name="salePrice" required className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400" />
-          </div>
-          <div>
-            <label className="text-slate-400 text-xs block mb-1">বিক্রির তারিখ</label>
-            <input type="date" name="saleDate" required defaultValue={new Date().toISOString().slice(0, 10)} className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400" />
+            <label className="text-slate-400 text-xs block mb-1">{t("saleDate")}</label>
+            <input type="date" name="saleDate" required defaultValue={new Date().toISOString().slice(0, 10)} className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm" />
           </div>
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="secondary" onClick={() => setSellTarget(null)}>বাতিল</Button>
-            <Button type="submit" className="bg-emerald-500 hover:bg-emerald-400 text-white">নিশ্চিত করুন</Button>
+            <Button variant="secondary" onClick={() => setSellTarget(null)}>{t("cancel")}</Button>
+            <Button type="submit">{t("confirm")}</Button>
           </div>
         </form>
       </Modal>
 
-      {/* ── মৃত্যুর রেকর্ড ফর্ম (Death Modal) ── */}
-      <Modal isOpen={!!deadTarget} onClose={() => setDeadTarget(null)} title="মৃত্যুর রেকর্ড যুক্ত করুন" size="sm">
+      <Modal isOpen={!!deadTarget} onClose={() => setDeadTarget(null)} title={t("addDeathRecord")} size="sm">
         <form onSubmit={handleDeadSubmit} className="space-y-4">
-          <div className="bg-red-500/10 p-3 rounded-lg border border-red-500/20 mb-4">
-            <p className="text-sm text-red-400 font-medium">সতর্কতা: এই অ্যাকশনটি গরুর স্ট্যাটাস পরিবর্তন করে দেবে।</p>
+          <div>
+            <label className="text-slate-400 text-xs block mb-1">{t("deathReason")}</label>
+            <input name="reason" required className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm" />
           </div>
           <div>
-            <label className="text-slate-400 text-xs block mb-1">মৃত্যুর কারণ</label>
-            <input name="reason" placeholder="যেমন: অসুস্থতা, দুর্ঘটনা..." required className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-400" />
+            <label className="text-slate-400 text-xs block mb-1">{t("estimatedLoss")}</label>
+            <input type="number" name="lossAmount" defaultValue={deadTarget?.purchasePrice || 0} className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm" />
           </div>
           <div>
-            <label className="text-slate-400 text-xs block mb-1">আনুমানিক আর্থিক ক্ষতি (৳)</label>
-            <input type="number" name="lossAmount" defaultValue={deadTarget?.purchasePrice || 0} className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-400" />
-          </div>
-          <div>
-            <label className="text-slate-400 text-xs block mb-1">তারিখ</label>
-            <input type="date" name="date" required defaultValue={new Date().toISOString().slice(0, 10)} className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-400" />
+            <label className="text-slate-400 text-xs block mb-1">{t("date")}</label>
+            <input type="date" name="date" required defaultValue={new Date().toISOString().slice(0, 10)} className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm" />
           </div>
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="secondary" onClick={() => setDeadTarget(null)}>বাতিল</Button>
-            <Button type="submit" className="bg-red-500 hover:bg-red-400 text-white">সংরক্ষণ করুন</Button>
+            <Button variant="secondary" onClick={() => setDeadTarget(null)}>{t("cancel")}</Button>
+            <Button type="submit" className="bg-red-500 hover:bg-red-400 text-white">{t("save")}</Button>
           </div>
         </form>
       </Modal>
 
-      {/* ── Confirm Delete Dialog ── */}
-      <ConfirmDialog
-        isOpen={!!deleteTarget}
-        message={`আপনি কি নিশ্চিত যে "${deleteTarget?.tagId} - ${deleteTarget?.name}" কে ফার্ম থেকে পুরোপুরি মুছে ফেলতে চান?`}
-        onCancel={() => setDeleteTarget(null)}
-        onConfirm={() => {
-          deleteCattle(deleteTarget._id || deleteTarget.id);
-          setDeleteTarget(null);
-        }}
-      />
-
-      {/* অন্যান্য মোডালগুলো (Profile, Edit, Add) */}
-      <Modal isOpen={!!selectedCattle} onClose={() => setSelectedCattle(null)} title={`${selectedCattle?.tagId}`} size="lg">
+      <ConfirmDialog isOpen={!!deleteTarget} message={t("confirm")} onCancel={() => setDeleteTarget(null)} onConfirm={() => { deleteCattle(deleteTarget._id || deleteTarget.id); setDeleteTarget(null); }} />
+      <Modal isOpen={!!selectedCattle} onClose={() => setSelectedCattle(null)} title={selectedCattle?.tagId} size="lg">
         {selectedCattle && <CattleProfile cattle={selectedCattle} onEdit={() => { setEditingCattle(selectedCattle); setSelectedCattle(null); }} />}
       </Modal>
-
-      <Modal isOpen={!!editingCattle} onClose={() => setEditingCattle(null)} title="এডিট করুন" size="md">
+      <Modal isOpen={!!editingCattle} onClose={() => setEditingCattle(null)} title={t("edit")} size="md">
         {editingCattle && <EditCattleForm cattle={editingCattle} onClose={() => { setEditingCattle(null); fetchRealCattleData(); }} />}
       </Modal>
-
       <Modal isOpen={showAddForm} onClose={() => setShowAddForm(false)} title={t("addCattle")} size="md">
         <AddCattleForm onClose={() => { setShowAddForm(false); fetchRealCattleData(); }} />
       </Modal>
