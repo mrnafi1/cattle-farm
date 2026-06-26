@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { useApp } from "../../contexts/AppContext"; // গরুর তালিকা আনার জন্য AppContext যুক্ত করা হলো
 import Button from "../ui/Button";
 import Modal from "../ui/Modal";
 
-const FEED_TYPES = ["ভুসি", "খড়", "সাইলেজ", "কাঁচা ঘাস", "দানাদার মিক্স"];
+const FEED_TYPES = ["ভুসি", "খড়", "সাইলেজ", "কাঁচা ঘাস", "দানাদার মিক্স"];
 
 const Field = ({ label, children }) => (
   <div><label className="text-slate-400 text-xs block mb-1">{label}</label>{children}</div>
@@ -17,18 +18,33 @@ const Select = ({ children, ...props }) => (
 );
 
 export default function FeedInventory() {
+  const { cattle } = useApp(); // ফার্মের গরুর ডাটা নিয়ে আসা হলো
   const [activeTab, setActiveTab] = useState("stock"); // 'stock' or 'logs'
   const [showAddStock, setShowAddStock] = useState(false);
   const [showFeedCattle, setShowFeedCattle] = useState(false);
 
+  // ── নতুন যুক্ত করা স্টেট (নির্দিষ্ট গরুকে খাবার দেওয়ার জন্য) ──
+  const [feedTargetType, setFeedTargetType] = useState("all"); 
+  const [selectedCattleId, setSelectedCattleId] = useState("");
+
+  // শুধুমাত্র জীবিত এবং ফার্মে উপস্থিত গরু ফিল্টার করা হলো
+  const activeCattle = cattle?.filter(c => c.status !== "sold" && c.status !== "dead") || [];
+
   // আপাতত ডেমো ডাটা (পরে এটি AppContext থেকে আসবে)
   const [inventory, setInventory] = useState([
     { id: 1, type: "ভুসি", amount: 150, unit: "kg" },
-    { id: 2, type: "খড়", amount: 300, unit: "kg" },
+    { id: 2, type: "খড়", amount: 300, unit: "kg" },
     { id: 3, type: "সাইলেজ", amount: 500, unit: "kg" },
   ]);
 
   const [feedLogs, setFeedLogs] = useState([]);
+
+  // ── মোডাল বন্ধ করার ফাংশন (যাতে ড্রপডাউন রিসেট হয়ে যায়) ──
+  const closeFeedModal = () => {
+    setShowFeedCattle(false);
+    setFeedTargetType("all");
+    setSelectedCattleId("");
+  };
 
   return (
     <div className="space-y-4">
@@ -115,7 +131,7 @@ export default function FeedInventory() {
       )}
 
       {/* Modals for Add Stock & Feed Cattle */}
-      {/* এগুলো আমরা ডাটাবেস কানেক্ট করার সময় ফাংশনাল করব, আপাতত শুধু ডেমো UI */}
+      {/* এগুলো আমরা ডাটাবেস কানেক্ট করার সময় ফাংশনাল করব, আপাতত শুধু ডেমো UI */}
       <Modal isOpen={showAddStock} onClose={() => setShowAddStock(false)} title="গুদামে খাবার যুক্ত করুন" size="sm">
         <div className="space-y-4">
           <Field label="খাদ্যের ধরন">
@@ -133,7 +149,7 @@ export default function FeedInventory() {
         </div>
       </Modal>
 
-      <Modal isOpen={showFeedCattle} onClose={() => setShowFeedCattle(false)} title="গরুকে খাবার দিন" size="sm">
+      <Modal isOpen={showFeedCattle} onClose={closeFeedModal} title="গরুকে খাবার দিন" size="sm">
         <div className="space-y-4">
           <div className="bg-sky-500/10 border border-sky-500/20 p-3 rounded-lg">
             <p className="text-xs text-sky-400">এখান থেকে খাবার এন্ট্রি দিলে তা অটোমেটিক গুদাম থেকে কমে যাবে।</p>
@@ -144,15 +160,29 @@ export default function FeedInventory() {
             </Select>
           </Field>
           <Field label="পরিমাণ (kg)"><Input type="number" placeholder="কত কেজি খাওয়ানো হলো?" /></Field>
+          
           <Field label="কাকে খাওয়ানো হলো?">
-            <Select>
+            <Select value={feedTargetType} onChange={(e) => setFeedTargetType(e.target.value)}>
               <option value="all">সব গরুকে (একসাথে)</option>
               <option value="single">নির্দিষ্ট গরুকে</option>
             </Select>
           </Field>
+
+          {/* ── কন্ডিশনাল ফিল্ড: 'নির্দিষ্ট গরুকে' সিলেক্ট করলেই এটি আসবে ── */}
+          {feedTargetType === "single" && (
+            <Field label="গরু নির্বাচন করুন">
+              <Select value={selectedCattleId} onChange={(e) => setSelectedCattleId(e.target.value)}>
+                <option value="">-- ট্যাগ আইডি ও নাম বেছে নিন --</option>
+                {activeCattle.map(c => (
+                  <option key={c._id} value={c._id}>{c.tagId} - {c.name || "নামহীন"}</option>
+                ))}
+              </Select>
+            </Field>
+          )}
+
           <Field label="তারিখ"><Input type="date" defaultValue={new Date().toISOString().slice(0,10)} /></Field>
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" onClick={() => setShowFeedCattle(false)}>বাতিল</Button>
+            <Button variant="secondary" onClick={closeFeedModal}>বাতিল</Button>
             <Button className="bg-emerald-500 text-white">🥣 নিশ্চিত করুন</Button>
           </div>
         </div>
