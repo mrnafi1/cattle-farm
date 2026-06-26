@@ -11,7 +11,6 @@ import ReportView from "./components/reports/ReportView";
 import UserManagement from "./components/settings/UserManagement";
 import Modal from "./components/ui/Modal";
 import AddCattleForm from "./components/cattle/AddCattleForm";
-// নতুন ইনভেন্টরি পেজ ইমপোর্ট করা হলো
 import FeedInventory from "./components/inventory/FeedInventory";
 
 // ── Login Screen ─────────────────────────────────────────────────
@@ -173,7 +172,7 @@ function AppShell() {
     dashboard:  <Dashboard />,
     cattle:     <CattleList />,
     dairy:      <DairyLog showAddModal={showAddMilk}   onCloseAddModal={() => setShowAddMilk(false)} />,
-    feeds:      <FeedInventory />, // নতুন পেজটি এখানে যুক্ত করা হলো
+    feed:       <FeedInventory />, // এখানে 'feed' কি (key) ব্যবহার করা হয়েছে
     finance:    <ExpenseTracker showAddModal={showAddExp} onCloseAddModal={() => setShowAddExp(false)} />,
     reports:    <ReportView />,
     settings:   hasAccess("admin") ? <UserManagement /> : <Dashboard />,
