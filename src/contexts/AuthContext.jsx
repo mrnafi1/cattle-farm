@@ -6,7 +6,7 @@ const AuthContext = createContext();
 const HIERARCHY = { admin: 3, worker: 2, shareholder: 1 };
 
 export function AuthProvider({ children }) {
-  // ১. পরিবর্তন: অ্যাপ লোড হওয়ার সময় লোকাল স্টোরেজ চেক করা
+  // অ্যাপ লোড হওয়ার সময় লোকাল স্টোরেজ চেক করা
   const [currentUser, setCurrentUser] = useState(() => {
     const savedUser = localStorage.getItem("cattleFarmUser");
     return savedUser ? JSON.parse(savedUser) : null;
@@ -70,7 +70,7 @@ export function AuthProvider({ children }) {
 
     if (user) {
       setCurrentUser(user);
-      // ২. পরিবর্তন: লগইন সফল হলে ইউজারের তথ্য লোকাল স্টোরেজে সেভ করা
+      // লগইন সফল হলে ইউজারের তথ্য লোকাল স্টোরেজে সেভ করা
       localStorage.setItem("cattleFarmUser", JSON.stringify(user));
       setAuthError("");
       return true;
@@ -80,7 +80,7 @@ export function AuthProvider({ children }) {
     return false;
   };
 
-  // ৩. পরিবর্তন: লগআউট করলে লোকাল স্টোরেজ থেকে ডাটা মুছে ফেলা
+  // লগআউট করলে লোকাল স্টোরেজ থেকে ডাটা মুছে ফেলা
   const logout = () => {
     setCurrentUser(null);
     localStorage.removeItem("cattleFarmUser");
@@ -93,7 +93,8 @@ export function AuthProvider({ children }) {
 
   // ── User CRUD (admin only) ────────────────────────────────────
   const addUser = async (data) => {
-    if (users.find((u) => u.phone === data.phone)) {
+    // শুধুমাত্র ফোন নাম্বার দেওয়া থাকলেই ডুপ্লিকেট চেক করবে
+    if (data.phone && users.find((u) => u.phone === data.phone)) {
       return { ok: false, msg: "এই ফোন নাম্বারে ইতিমধ্যে একজন ব্যবহারকারী আছে" };
     }
     const newUser = {
@@ -117,19 +118,23 @@ export function AuthProvider({ children }) {
 
   const updateUser = async (id, data) => {
     try {
+      // ডাটাবেসে _id আপডেট করা যায় না, তাই ডাটা থেকে _id সরিয়ে নেওয়া হলো
+      const updatePayload = { ...data };
+      delete updatePayload._id;
+
       const res = await fetch(`https://cattle-farm-server.onrender.com/users/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
+        body: JSON.stringify(updatePayload)
       });
       
       if (res.ok) {
         fetchUsers(); 
         
-        // ৪. পরিবর্তন: যদি নিজের প্রোফাইল আপডেট হয়, তবে লোকাল স্টোরেজও আপডেট করা
+        // যদি নিজের প্রোফাইল আপডেট হয়, তবে লোকাল স্টোরেজও আপডেট করা
         if (currentUser?._id === id || currentUser?.id === id) {
           setCurrentUser((prev) => {
-            const updatedUser = { ...prev, ...data };
+            const updatedUser = { ...prev, ...updatePayload };
             localStorage.setItem("cattleFarmUser", JSON.stringify(updatedUser));
             return updatedUser;
           });
@@ -154,10 +159,34 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const toggleUserActive = (id) => {
+  // ── নতুন আপডেট: ডাটাবেসে স্ট্যাটাস সেভ করা ──
+  const toggleUserActive = async (id) => {
     if (currentUser?._id === id || currentUser?.id === id) return;
-    const updated = users.map((u) => u._id === id || u.id === id ? { ...u, active: !u.active } : u);
-    setUsers(updated);
+    
+    // নির্দিষ্ট ইউজারকে খুঁজে বের করা
+    const userToToggle = users.find((u) => u._id === id || u.id === id);
+    if (!userToToggle) return;
+
+    const newStatus = !userToToggle.active;
+
+    // তাৎক্ষণিক UI আপডেটের জন্য
+    setUsers(users.map((u) => u._id === id || u.id === id ? { ...u, active: newStatus } : u));
+
+    try {
+      const updatePayload = { ...userToToggle, active: newStatus };
+      delete updatePayload._id; // _id বাদ দেওয়া হলো
+
+      // ডাটাবেসে স্ট্যাটাস আপডেট পাঠানো
+      await fetch(`https://cattle-farm-server.onrender.com/users/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatePayload)
+      });
+    } catch (error) {
+      console.error("স্ট্যাটাস আপডেট করতে সমস্যা:", error);
+      // এরর হলে আবার আগের স্ট্যাটাসে ফেরত নেওয়া
+      setUsers(users.map((u) => u._id === id || u.id === id ? { ...u, active: !newStatus } : u));
+    }
   };
 
   return (
