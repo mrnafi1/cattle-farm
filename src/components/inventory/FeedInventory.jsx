@@ -7,14 +7,15 @@ import ConfirmDialog from "../ui/ConfirmDialog";
 
 const FEED_TYPES = ["ভুসি", "খড়", "সাইলেজ", "কাঁচা ঘাস", "দানাদার মিক্স"];
 
+// ইনপুট এবং ফিল্ডে নতুন কালার থিম যুক্ত করা হলো
 const Field = ({ label, children }) => (
-  <div><label className="text-slate-400 text-xs block mb-1">{label}</label>{children}</div>
+  <div><label className="text-[#64748B] dark:text-slate-400 text-xs block mb-1 transition-colors">{label}</label>{children}</div>
 );
 const Input = (props) => (
-  <input {...props} className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400/60 placeholder-slate-500" />
+  <input {...props} className="w-full bg-[#FFFFFF] dark:bg-slate-700/50 border border-[#E8E6DE] dark:border-slate-600 rounded-lg px-3 py-2 text-[#1A1A2E] dark:text-white text-sm focus:outline-none focus:border-[#F59E0B] dark:focus:border-amber-400/60 placeholder-[#94A3B8] dark:placeholder-slate-500 transition-colors shadow-sm dark:shadow-none" />
 );
 const Select = ({ children, ...props }) => (
-  <select {...props} className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400/60">
+  <select {...props} className="w-full bg-[#FFFFFF] dark:bg-slate-700/50 border border-[#E8E6DE] dark:border-slate-600 rounded-lg px-3 py-2 text-[#1A1A2E] dark:text-white text-sm focus:outline-none focus:border-[#F59E0B] dark:focus:border-amber-400/60 transition-colors shadow-sm dark:shadow-none">
     {children}
   </select>
 );
@@ -28,7 +29,7 @@ export default function FeedInventory() {
     addToast 
   } = useApp();
   
-  const { t, language } = useLanguage(); // language যুক্ত করা হলো
+  const { t, language } = useLanguage();
 
   const [activeTab, setActiveTab] = useState("stock");
   const [showAddStock, setShowAddStock] = useState(false);
@@ -48,7 +49,6 @@ export default function FeedInventory() {
   const [editFeedTarget, setEditFeedTarget] = useState(null);
   const [deleteFeedTarget, setDeleteFeedTarget] = useState(null);
 
-  // খাদ্যের ধরনের অনুবাদ (ডাটাবেজ ভ্যালু ঠিক রাখার জন্য)
   const getFeedTypeName = (type) => {
     if (language === "bn") return type;
     const map = {
@@ -104,8 +104,8 @@ export default function FeedInventory() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-white">{t("inventory")}</h2>
-          <p className="text-slate-500 text-sm">
+          <h2 className="text-xl font-bold text-[#1A1A2E] dark:text-white transition-colors">{t("inventory")}</h2>
+          <p className="text-[#64748B] dark:text-slate-500 text-sm transition-colors">
             {language === "bn" ? "ফার্মের খাবার মজুদ এবং দৈনিক খরচের হিসাব" : "Farm feed inventory and daily expense logs"}
           </p>
         </div>
@@ -113,18 +113,18 @@ export default function FeedInventory() {
           <Button variant="secondary" onClick={() => setShowAddStock(true)}>
             {language === "bn" ? "+ খাবার কিনুন" : "+ Buy Feed"}
           </Button>
-          <Button className="bg-emerald-500 hover:bg-emerald-400 text-white" onClick={() => setShowFeedCattle(true)}>
+          <Button className="bg-[#10B981] hover:bg-[#059669] dark:bg-emerald-500 dark:hover:bg-emerald-400 text-white border-none transition-colors" onClick={() => setShowFeedCattle(true)}>
             🥣 {language === "bn" ? "গরুকে খাবার দিন" : "Feed Cattle"}
           </Button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-slate-700/50 mb-4">
-        <button onClick={() => setActiveTab("stock")} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "stock" ? "border-amber-400 text-amber-400" : "border-transparent text-slate-400 hover:text-slate-300"}`}>
+      <div className="flex border-b border-[#E8E6DE] dark:border-slate-700/50 mb-4 transition-colors">
+        <button onClick={() => setActiveTab("stock")} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "stock" ? "border-[#F59E0B] text-[#F59E0B] dark:border-amber-400 dark:text-amber-400" : "border-transparent text-[#64748B] hover:text-[#1A1A2E] dark:text-slate-400 dark:hover:text-slate-300"}`}>
           {language === "bn" ? "গুদামের বর্তমান স্টক" : "Current Stock"}
         </button>
-        <button onClick={() => setActiveTab("logs")} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "logs" ? "border-amber-400 text-amber-400" : "border-transparent text-slate-400 hover:text-slate-300"}`}>
+        <button onClick={() => setActiveTab("logs")} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "logs" ? "border-[#F59E0B] text-[#F59E0B] dark:border-amber-400 dark:text-amber-400" : "border-transparent text-[#64748B] hover:text-[#1A1A2E] dark:text-slate-400 dark:hover:text-slate-300"}`}>
           {t("feedLog")}
         </button>
       </div>
@@ -133,36 +133,36 @@ export default function FeedInventory() {
       {activeTab === "stock" && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {inventory.map((item) => (
-            <div key={item._id || item.type} className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 flex flex-col items-center justify-center relative overflow-hidden group">
+            <div key={item._id || item.type} className="bg-[#FFFFFF] dark:bg-slate-800/40 border border-[#E8E6DE] dark:border-slate-700/40 shadow-sm dark:shadow-none rounded-xl p-4 flex flex-col items-center justify-center relative overflow-hidden group transition-colors">
               {item.amount < 50 && (
-                <span className="absolute top-0 right-0 bg-red-500/80 text-white text-[10px] px-2 py-1 rounded-bl-lg font-bold">
+                <span className="absolute top-0 right-0 bg-[#EF4444] dark:bg-red-500/80 text-white text-[10px] px-2 py-1 rounded-bl-lg font-bold transition-colors">
                   {language === "bn" ? "অ্যালার্ট" : "Alert"}
                 </span>
               )}
               <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => setEditStockTarget(item)} className="p-1.5 text-xs text-sky-400 bg-sky-400/10 rounded hover:bg-sky-400/20">✏️</button>
-                <button onClick={() => setDeleteStockId(item._id)} className="p-1.5 text-xs text-red-400 bg-red-400/10 rounded hover:bg-red-400/20">🗑️</button>
+                <button onClick={() => setEditStockTarget(item)} className="p-1.5 text-xs text-sky-600 bg-sky-50 dark:text-sky-400 dark:bg-sky-400/10 rounded hover:bg-sky-100 dark:hover:bg-sky-400/20 transition-colors">✏️</button>
+                <button onClick={() => setDeleteStockId(item._id)} className="p-1.5 text-xs text-[#EF4444] bg-red-50 dark:text-red-400 dark:bg-red-400/10 rounded hover:bg-red-100 dark:hover:bg-red-400/20 transition-colors">🗑️</button>
               </div>
               <div className="text-3xl mb-2">🌾</div>
-              <p className="text-slate-400 text-sm">{getFeedTypeName(item.type)}</p>
-              <p className={`text-2xl font-bold ${item.amount < 50 ? "text-red-400" : "text-white"}`}>
-                {item.amount} <span className="text-sm font-normal text-slate-500">{item.unit || 'kg'}</span>
+              <p className="text-[#64748B] dark:text-slate-400 text-sm transition-colors">{getFeedTypeName(item.type)}</p>
+              <p className={`text-2xl font-bold transition-colors ${item.amount < 50 ? "text-[#EF4444] dark:text-red-400" : "text-[#1A1A2E] dark:text-white"}`}>
+                {item.amount} <span className="text-sm font-normal text-[#94A3B8] dark:text-slate-500">{item.unit || 'kg'}</span>
               </p>
             </div>
           ))}
           {(!inventory || inventory.length === 0) && (
-            <div className="col-span-full text-center py-8 text-slate-500 bg-slate-800/40 rounded-xl border border-slate-700/40">{t("noData")}</div>
+            <div className="col-span-full text-center py-8 text-[#94A3B8] dark:text-slate-500 bg-[#FFFFFF] dark:bg-slate-800/40 rounded-xl border border-[#E8E6DE] dark:border-slate-700/40 transition-colors">{t("noData")}</div>
           )}
         </div>
       )}
 
       {/* ── Tab Content: Logs ── */}
       {activeTab === "logs" && (
-        <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl overflow-hidden">
+        <div className="bg-[#FFFFFF] dark:bg-slate-800/40 border border-[#E8E6DE] dark:border-slate-700/40 shadow-sm dark:shadow-none rounded-xl overflow-hidden transition-colors">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-slate-700/50">
+                <tr className="bg-[#F5F4EF] dark:bg-transparent border-b border-[#E8E6DE] dark:border-slate-700/50 transition-colors">
                   {[
                     t("date"), 
                     language === "bn" ? "ক্যাটাগরি" : "Category", 
@@ -171,31 +171,31 @@ export default function FeedInventory() {
                     language === "bn" ? "নোট" : "Note", 
                     t("action")
                   ].map((h) => (
-                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">{h}</th>
+                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-[#64748B] dark:text-slate-400 uppercase tracking-wider transition-colors">{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-700/30">
+              <tbody className="divide-y divide-[#E8E6DE] dark:divide-slate-700/30">
                 {!feedLogs || feedLogs.length === 0 ? (
-                  <tr><td colSpan={6} className="text-center py-8 text-slate-500">{t("noData")}</td></tr>
+                  <tr><td colSpan={6} className="text-center py-8 text-[#94A3B8] dark:text-slate-500 transition-colors">{t("noData")}</td></tr>
                 ) : (
                   [...feedLogs].reverse().map((log, idx) => (
-                    <tr key={log._id || idx} className="hover:bg-slate-700/20">
-                      <td className="px-4 py-3 text-slate-300 text-sm">{log.date}</td>
+                    <tr key={log._id || idx} className="hover:bg-[#F5F4EF] dark:hover:bg-slate-700/20 transition-colors">
+                      <td className="px-4 py-3 text-[#64748B] dark:text-slate-300 text-sm transition-colors">{log.date}</td>
                       <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded text-xs ${log.category === "in" ? "bg-emerald-500/10 text-emerald-400" : "bg-sky-500/10 text-sky-400"}`}>
+                        <span className={`px-2 py-1 rounded text-xs transition-colors ${log.category === "in" ? "bg-[#10B981]/10 text-[#10B981] dark:bg-emerald-500/10 dark:text-emerald-400" : "bg-sky-100 text-sky-600 dark:bg-sky-500/10 dark:text-sky-400"}`}>
                           {log.category === "in" 
                             ? (language === "bn" ? "স্টক ইন (কেনা)" : "Stock In (Purchased)") 
                             : (language === "bn" ? "খাওয়ানো হয়েছে" : "Fed to Cattle")}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-white text-sm">{getFeedTypeName(log.type)}</td>
-                      <td className="px-4 py-3 text-amber-400 font-medium">{log.amount} kg</td>
-                      <td className="px-4 py-3 text-slate-400 text-sm">{log.note || "—"}</td>
+                      <td className="px-4 py-3 text-[#1A1A2E] dark:text-white text-sm transition-colors">{getFeedTypeName(log.type)}</td>
+                      <td className="px-4 py-3 text-[#F59E0B] dark:text-amber-400 font-medium transition-colors">{log.amount} kg</td>
+                      <td className="px-4 py-3 text-[#64748B] dark:text-slate-400 text-sm transition-colors">{log.note || "—"}</td>
                       <td className="px-4 py-3">
                         <div className="flex gap-1">
-                          <button onClick={() => { setEditFeedTarget(log); setFeedForm({ amount: log.amount, date: log.date, type: log.type }); }} className="px-2 py-1 rounded text-xs text-sky-400 hover:bg-sky-400/10">✏️</button>
-                          <button onClick={() => setDeleteFeedTarget(log)} className="px-2 py-1 rounded text-xs text-red-400 hover:bg-red-400/10">🗑️</button>
+                          <button onClick={() => { setEditFeedTarget(log); setFeedForm({ amount: log.amount, date: log.date, type: log.type }); }} className="px-2 py-1 rounded text-xs text-sky-600 bg-sky-50 dark:text-sky-400 dark:hover:bg-sky-400/10 transition-colors">✏️</button>
+                          <button onClick={() => setDeleteFeedTarget(log)} className="px-2 py-1 rounded text-xs text-[#EF4444] bg-red-50 dark:text-red-400 dark:hover:bg-red-400/10 transition-colors">🗑️</button>
                         </div>
                       </td>
                     </tr>
@@ -231,8 +231,8 @@ export default function FeedInventory() {
 
       <Modal isOpen={showFeedCattle} onClose={closeFeedModal} title={language === "bn" ? "গরুকে খাবার দিন" : "Feed Cattle"} size="sm">
         <div className="space-y-4">
-          <div className="bg-sky-500/10 border border-sky-500/20 p-3 rounded-lg">
-            <p className="text-xs text-sky-400">
+          <div className="bg-sky-50 dark:bg-sky-500/10 border border-sky-100 dark:border-sky-500/20 p-3 rounded-lg transition-colors">
+            <p className="text-xs text-sky-600 dark:text-sky-400 transition-colors">
               {language === "bn" ? "এখান থেকে খাবার এন্ট্রি দিলে তা অটোমেটিক গুদাম থেকে কমে যাবে।" : "Feed entered here will automatically be deducted from inventory."}
             </p>
           </div>
@@ -261,7 +261,7 @@ export default function FeedInventory() {
           <Field label={t("date")}><Input type="date" value={feedForm.date} onChange={(e) => setFeedForm({...feedForm, date: e.target.value})} /></Field>
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={closeFeedModal}>{t("cancel")}</Button>
-            <Button className="bg-emerald-500 text-white" onClick={handleSaveFeed}>🥣 {t("confirm")}</Button>
+            <Button className="bg-[#10B981] hover:bg-[#059669] dark:bg-emerald-500 text-white border-none transition-colors" onClick={handleSaveFeed}>🥣 {t("confirm")}</Button>
           </div>
         </div>
       </Modal>
@@ -269,8 +269,8 @@ export default function FeedInventory() {
       {/* ── Modals: Edit ── */}
       <Modal isOpen={!!editStockTarget} onClose={() => setEditStockTarget(null)} title={language === "bn" ? "স্টক আপডেট করুন" : "Update Stock"} size="sm">
         <div className="space-y-4">
-          <p className="text-sm text-slate-300">
-            {language === "bn" ? "খাবারের ধরন:" : "Feed Type:"} <strong className="text-amber-400">{getFeedTypeName(editStockTarget?.type)}</strong>
+          <p className="text-sm text-[#1A1A2E] dark:text-slate-300 transition-colors">
+            {language === "bn" ? "খাবারের ধরন:" : "Feed Type:"} <strong className="text-[#F59E0B] dark:text-amber-400 transition-colors">{getFeedTypeName(editStockTarget?.type)}</strong>
           </p>
           <Field label={language === "bn" ? "নতুন পরিমাণ (kg)" : "New Amount (kg)"}>
             <Input type="number" value={editStockTarget?.amount || ""} onChange={(e) => setEditStockTarget({...editStockTarget, amount: e.target.value})} />
@@ -284,8 +284,8 @@ export default function FeedInventory() {
 
       <Modal isOpen={!!editFeedTarget} onClose={() => setEditFeedTarget(null)} title={language === "bn" ? "খাবারের রেকর্ড আপডেট" : "Update Feed Record"} size="sm">
         <div className="space-y-4">
-          <p className="text-sm text-slate-300">
-            {language === "bn" ? "খাবারের ধরন:" : "Feed Type:"} <strong className="text-amber-400">{getFeedTypeName(editFeedTarget?.type)}</strong>
+          <p className="text-sm text-[#1A1A2E] dark:text-slate-300 transition-colors">
+            {language === "bn" ? "খাবারের ধরন:" : "Feed Type:"} <strong className="text-[#F59E0B] dark:text-amber-400 transition-colors">{getFeedTypeName(editFeedTarget?.type)}</strong>
           </p>
           <Field label={language === "bn" ? "পরিমাণ (kg)" : "Amount (kg)"}>
             <Input type="number" value={feedForm.amount} onChange={(e) => setFeedForm({...feedForm, amount: e.target.value})} />

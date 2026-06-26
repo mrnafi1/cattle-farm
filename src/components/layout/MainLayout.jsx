@@ -7,15 +7,11 @@ import { useAuth } from "../../contexts/AuthContext";
 
 export default function MainLayout({ children, activePage, onNavigate, onFABActions }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  
-  // সরাসরি currentUser নিয়ে আসছি
   const { currentUser } = useAuth(); 
-
-  // ইউজার শেয়ারহোল্ডার কি না, তা ডিরেক্ট চেক করছি
   const isShareholder = currentUser?.role === "shareholder" || currentUser?.role === "Shareholder";
 
   return (
-    <div className="flex h-screen bg-[#080c18] text-white overflow-hidden">
+    <div className="flex h-screen bg-[#FAFAF7] dark:bg-[#080c18] text-[#1A1A2E] dark:text-white overflow-hidden transition-colors duration-300">
       <Sidebar
         activePage={activePage}
         onNavigate={onNavigate}
@@ -42,7 +38,6 @@ export default function MainLayout({ children, activePage, onNavigate, onFABActi
 
       <ToastContainer />
       
-      {/* ── ম্যাজিক লজিক: যদি ইউজার শেয়ারহোল্ডার "না" হয়, তবেই বাটন দেখাবে ── */}
       {!isShareholder && (
         <FAB
           onAddCattle={onFABActions?.onAddCattle || (() => {})}

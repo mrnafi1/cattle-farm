@@ -9,11 +9,12 @@ import ConfirmDialog from "../ui/ConfirmDialog";
 // নতুন ক্যাটাগরিগুলো যোগ করা হলো
 const CAT_ICONS = { feed: "🌾", feed_purchase: "🌾", cattle_purchase: "🐄", cattle_death: "💀", medical: "💊", labor: "👷", electricity: "⚡", other: "📦" };
 
+// Input ও Field এ নতুন থিম বসানো হলো
 const Input = (props) => (
-  <input {...props} className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400/60 placeholder-slate-500" />
+  <input {...props} className="w-full bg-[#FFFFFF] dark:bg-slate-700/50 border border-[#E8E6DE] dark:border-slate-600 rounded-lg px-3 py-2 text-[#1A1A2E] dark:text-white text-sm focus:outline-none focus:border-[#F59E0B] dark:focus:border-amber-400/60 placeholder-[#94A3B8] dark:placeholder-slate-500 transition-colors shadow-sm dark:shadow-none" />
 );
 const Field = ({ label, children }) => (
-  <div><label className="text-slate-400 text-xs block mb-1">{label}</label>{children}</div>
+  <div><label className="text-[#64748B] dark:text-slate-400 text-xs block mb-1 transition-colors">{label}</label>{children}</div>
 );
 
 const EMPTY_EXP = { date: new Date().toISOString().slice(0, 10), category: "feed", amount: "", description: "" };
@@ -62,11 +63,10 @@ export default function ExpenseTracker() {
 
   const fmt = (n) => n.toLocaleString(language === "bn" ? "bn-BD" : "en-BD");
 
-  // ক্যাটাগরির নাম বাংলায় রূপান্তরের ফাংশন
   const getCatName = (cat) => {
     if (language !== "bn") return cat;
     const names = {
-      feed: "গো-খাদ্য", feed_purchase: "খাবার ক্রয়", cattle_purchase: "গরু ক্রয়", cattle_death: "গরুর মৃত্যু (ক্ষতি)", medical: "চিকিৎসা", labor: "শ্রমিক বেতন", electricity: "বিদ্যুৎ", other: "অন্যান্য"
+      feed: "গো-খাদ্য", feed_purchase: "খাবার ক্রয়", cattle_purchase: "গরু ক্রয়", cattle_death: "গরুর মৃত্যু (ক্ষতি)", medical: "চিকিৎসা", labor: "শ্রমিক বেতন", electricity: "বিদ্যুৎ", other: "অন্যান্য"
     };
     return names[cat] || cat;
   };
@@ -76,8 +76,8 @@ export default function ExpenseTracker() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-white">{t("finance")}</h2>
-          <p className="text-slate-500 text-sm">{language === "bn" ? "আয় ও ব্যয়ের বিস্তারিত হিসাব" : "Income and Expense Details"}</p>
+          <h2 className="text-xl font-bold text-[#1A1A2E] dark:text-white transition-colors">{t("finance")}</h2>
+          <p className="text-[#64748B] dark:text-slate-500 text-sm transition-colors">{language === "bn" ? "আয় ও ব্যয়ের বিস্তারিত হিসাব" : "Income and Expense Details"}</p>
         </div>
         {canEdit && (
           <div className="flex gap-2">
@@ -87,29 +87,31 @@ export default function ExpenseTracker() {
         )}
       </div>
 
-      {/* Summary - এই গ্রিডটি ঠিক করা হয়েছে (২ কলাম) */}
+      {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-3 mb-2">
-        <div className="bg-slate-800/40 border border-emerald-500/20 rounded-xl p-3 text-center min-w-0 flex flex-col justify-center">
-          <p className="text-slate-400 text-[11px] sm:text-xs mb-1 truncate" title={t("monthlyIncome")}>{t("monthlyIncome")}</p>
-          <p className="text-base sm:text-xl font-bold text-emerald-400 truncate" title={`৳${fmt(stats.monthlyIncome)}`}>৳{fmt(stats.monthlyIncome)}</p>
+        <div className="bg-[#FFFFFF] dark:bg-slate-800/40 border border-[#10B981]/30 dark:border-emerald-500/20 shadow-sm dark:shadow-none rounded-xl p-3 text-center min-w-0 flex flex-col justify-center transition-colors">
+          <p className="text-[#64748B] dark:text-slate-400 text-[11px] sm:text-xs mb-1 truncate transition-colors" title={t("monthlyIncome")}>{t("monthlyIncome")}</p>
+          <p className="text-base sm:text-xl font-bold text-[#10B981] dark:text-emerald-400 truncate transition-colors" title={`৳${fmt(stats.monthlyIncome)}`}>৳{fmt(stats.monthlyIncome)}</p>
         </div>
-        <div className="bg-slate-800/40 border border-red-500/20 rounded-xl p-3 text-center min-w-0 flex flex-col justify-center">
-          <p className="text-slate-400 text-[11px] sm:text-xs mb-1 truncate" title={t("monthlyExpense")}>{t("monthlyExpense")}</p>
-          <p className="text-base sm:text-xl font-bold text-red-400 truncate" title={`৳${fmt(stats.monthlyExpense)}`}>৳{fmt(stats.monthlyExpense)}</p>
+        <div className="bg-[#FFFFFF] dark:bg-slate-800/40 border border-[#EF4444]/30 dark:border-red-500/20 shadow-sm dark:shadow-none rounded-xl p-3 text-center min-w-0 flex flex-col justify-center transition-colors">
+          <p className="text-[#64748B] dark:text-slate-400 text-[11px] sm:text-xs mb-1 truncate transition-colors" title={t("monthlyExpense")}>{t("monthlyExpense")}</p>
+          <p className="text-base sm:text-xl font-bold text-[#EF4444] dark:text-red-400 truncate transition-colors" title={`৳${fmt(stats.monthlyExpense)}`}>৳{fmt(stats.monthlyExpense)}</p>
         </div>
-        {/* নিট লাভ নিচে পুরো জায়গা জুড়ে থাকবে */}
-        <div className="col-span-2 bg-slate-800/40 border border-amber-500/20 rounded-xl p-4 text-center min-w-0 flex flex-col justify-center">
-          <p className="text-slate-400 text-xs mb-1 truncate" title={t("netProfit")}>{t("netProfit")}</p>
-          <p className={`text-xl sm:text-2xl font-bold truncate ${stats.netProfit >= 0 ? "text-amber-400" : "text-red-400"}`} title={`৳${fmt(stats.netProfit)}`}>৳{fmt(stats.netProfit)}</p>
+        {/* Net Profit */}
+        <div className="col-span-2 bg-[#FFFFFF] dark:bg-slate-800/40 border border-[#F59E0B]/30 dark:border-amber-500/20 shadow-sm dark:shadow-none rounded-xl p-4 text-center min-w-0 flex flex-col justify-center transition-colors">
+          <p className="text-[#64748B] dark:text-slate-400 text-xs mb-1 truncate transition-colors" title={t("netProfit")}>{t("netProfit")}</p>
+          <p className={`text-xl sm:text-2xl font-bold truncate transition-colors ${stats.netProfit >= 0 ? "text-[#F59E0B] dark:text-amber-400" : "text-[#EF4444] dark:text-red-400"}`} title={`৳${fmt(stats.netProfit)}`}>৳{fmt(stats.netProfit)}</p>
         </div>
       </div>
 
-      {/* Tab */}
-      <div className="flex gap-1 bg-slate-800/60 rounded-xl p-1 w-fit">
+      {/* Tabs */}
+      <div className="flex gap-1 bg-[#F5F4EF] dark:bg-slate-800/60 rounded-xl p-1 w-fit transition-colors">
         {[{ key: "expense", label: `💸 ${t("expense")}` }, { key: "income", label: `💰 ${t("income")}` }].map((tb) => (
           <button key={tb.key} onClick={() => setTab(tb.key)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              tab === tb.key ? "bg-amber-400/15 text-amber-400 border border-amber-400/20" : "text-slate-400 hover:text-slate-200"
+              tab === tb.key 
+                ? "bg-amber-100 dark:bg-amber-400/15 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-400/20 shadow-sm dark:shadow-none" 
+                : "text-[#64748B] dark:text-slate-400 hover:text-[#1A1A2E] dark:hover:text-slate-200"
             }`}>
             {tb.label}
           </button>
@@ -118,35 +120,38 @@ export default function ExpenseTracker() {
 
       {/* Expense list */}
       {tab === "expense" && (
-        <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl overflow-hidden">
+        <div className="bg-[#FFFFFF] dark:bg-slate-800/40 border border-[#E8E6DE] dark:border-slate-700/40 shadow-sm dark:shadow-none rounded-xl overflow-hidden transition-colors">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-slate-700/50">
+                <tr className="bg-[#F5F4EF] dark:bg-transparent border-b border-[#E8E6DE] dark:border-slate-700/50 transition-colors">
                   {[t("date"), t("category"), t("description"), t("amount"), t("action")].map((h) => (
-                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase">{h}</th>
+                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-[#64748B] dark:text-slate-400 uppercase transition-colors">{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-700/30">
+              <tbody className="divide-y divide-[#E8E6DE] dark:divide-slate-700/30">
                 {expenses.map((e) => (
-                  <tr key={e._id || e.id} className="hover:bg-slate-700/20 transition-colors">
-                    <td className="px-4 py-3 text-slate-400 text-sm">{e.date}</td>
+                  <tr key={e._id || e.id} className="hover:bg-[#F5F4EF] dark:hover:bg-slate-700/20 transition-colors">
+                    <td className="px-4 py-3 text-[#64748B] dark:text-slate-400 text-sm transition-colors">{e.date}</td>
                     <td className="px-4 py-3">
-                      <span className="flex items-center gap-1.5 text-sm text-slate-300 whitespace-nowrap">
+                      <span className="flex items-center gap-1.5 text-sm text-[#1A1A2E] dark:text-slate-300 whitespace-nowrap transition-colors">
                         {CAT_ICONS[e.category] || "📦"} {getCatName(e.category)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-slate-300 text-sm max-w-[160px] truncate" title={e.description}>{e.description}</td>
-                    <td className="px-4 py-3 text-red-400 font-semibold text-sm whitespace-nowrap">-৳{fmt(e.amount)}</td>
+                    <td className="px-4 py-3 text-[#64748B] dark:text-slate-300 text-sm max-w-[160px] truncate transition-colors" title={e.description}>{e.description}</td>
+                    <td className="px-4 py-3 text-[#EF4444] dark:text-red-400 font-semibold text-sm whitespace-nowrap transition-colors">-৳{fmt(e.amount)}</td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1">
-                        {canEdit   && <button onClick={() => openEditExp(e)} className="px-2 py-1 rounded text-xs text-sky-400 hover:bg-sky-400/10">✏️</button>}
-                        {canDelete && <button onClick={() => setDeleteExp(e)} className="px-2 py-1 rounded text-xs text-red-400 hover:bg-red-400/10">🗑️</button>}
+                        {canEdit   && <button onClick={() => openEditExp(e)} className="px-2 py-1 rounded text-xs text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-400/10 transition-colors">✏️</button>}
+                        {canDelete && <button onClick={() => setDeleteExp(e)} className="px-2 py-1 rounded text-xs text-[#EF4444] dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-400/10 transition-colors">🗑️</button>}
                       </div>
                     </td>
                   </tr>
                 ))}
+                {expenses.length === 0 && (
+                  <tr><td colSpan={5} className="text-center py-8 text-[#94A3B8] dark:text-slate-500 transition-colors">{t("noData")}</td></tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -155,31 +160,34 @@ export default function ExpenseTracker() {
 
       {/* Income list */}
       {tab === "income" && (
-        <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl overflow-hidden">
+        <div className="bg-[#FFFFFF] dark:bg-slate-800/40 border border-[#E8E6DE] dark:border-slate-700/40 shadow-sm dark:shadow-none rounded-xl overflow-hidden transition-colors">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-slate-700/50">
+                <tr className="bg-[#F5F4EF] dark:bg-transparent border-b border-[#E8E6DE] dark:border-slate-700/50 transition-colors">
                   {[t("date"), t("source"), t("description"), t("amount"), t("action")].map((h) => (
-                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase">{h}</th>
+                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-[#64748B] dark:text-slate-400 uppercase transition-colors">{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-700/30">
+              <tbody className="divide-y divide-[#E8E6DE] dark:divide-slate-700/30">
                 {incomes.map((i) => (
-                  <tr key={i._id || i.id} className="hover:bg-slate-700/20 transition-colors">
-                    <td className="px-4 py-3 text-slate-400 text-sm">{i.date}</td>
-                    <td className="px-4 py-3 text-slate-300 text-sm whitespace-nowrap">💰 {i.source}</td>
-                    <td className="px-4 py-3 text-slate-300 text-sm max-w-[160px] truncate" title={i.description}>{i.description}</td>
-                    <td className="px-4 py-3 text-emerald-400 font-semibold text-sm whitespace-nowrap">+৳{fmt(i.amount)}</td>
+                  <tr key={i._id || i.id} className="hover:bg-[#F5F4EF] dark:hover:bg-slate-700/20 transition-colors">
+                    <td className="px-4 py-3 text-[#64748B] dark:text-slate-400 text-sm transition-colors">{i.date}</td>
+                    <td className="px-4 py-3 text-[#1A1A2E] dark:text-slate-300 text-sm whitespace-nowrap transition-colors">💰 {i.source}</td>
+                    <td className="px-4 py-3 text-[#64748B] dark:text-slate-300 text-sm max-w-[160px] truncate transition-colors" title={i.description}>{i.description}</td>
+                    <td className="px-4 py-3 text-[#10B981] dark:text-emerald-400 font-semibold text-sm whitespace-nowrap transition-colors">+৳{fmt(i.amount)}</td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1">
-                        {canEdit   && <button onClick={() => openEditInc(i)} className="px-2 py-1 rounded text-xs text-sky-400 hover:bg-sky-400/10">✏️</button>}
-                        {canDelete && <button onClick={() => setDeleteInc(i)} className="px-2 py-1 rounded text-xs text-red-400 hover:bg-red-400/10">🗑️</button>}
+                        {canEdit   && <button onClick={() => openEditInc(i)} className="px-2 py-1 rounded text-xs text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-400/10 transition-colors">✏️</button>}
+                        {canDelete && <button onClick={() => setDeleteInc(i)} className="px-2 py-1 rounded text-xs text-[#EF4444] dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-400/10 transition-colors">🗑️</button>}
                       </div>
                     </td>
                   </tr>
                 ))}
+                {incomes.length === 0 && (
+                  <tr><td colSpan={5} className="text-center py-8 text-[#94A3B8] dark:text-slate-500 transition-colors">{t("noData")}</td></tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -192,7 +200,7 @@ export default function ExpenseTracker() {
           <Field label={t("date")}><Input type="date" value={expForm.date} onChange={(e) => setE("date", e.target.value)} /></Field>
           <Field label={t("category")}>
             <select value={expForm.category} onChange={(e) => setE("category", e.target.value)}
-              className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400/60">
+              className="w-full bg-[#FFFFFF] dark:bg-slate-700/50 border border-[#E8E6DE] dark:border-slate-600 rounded-lg px-3 py-2 text-[#1A1A2E] dark:text-white text-sm focus:outline-none focus:border-[#F59E0B] dark:focus:border-amber-400/60 shadow-sm dark:shadow-none transition-colors">
               {Object.keys(CAT_ICONS).map((k) => <option key={k} value={k}>{CAT_ICONS[k]} {getCatName(k)}</option>)}
             </select>
           </Field>
