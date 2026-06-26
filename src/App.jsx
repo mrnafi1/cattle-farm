@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AppProvider } from "./contexts/AppContext";
 import { LanguageProvider, useLanguage } from "./contexts/LanguageContext";
@@ -60,7 +60,7 @@ function LoginScreen() {
               loginType === "admin" ? "bg-amber-500 text-slate-900 shadow-lg" : "text-slate-400 hover:text-white"
             }`}
           >
-            অ্যাডমিন
+            {language === "bn" ? "অ্যাডমিন" : "Admin"}
           </button>
           <button
             type="button"
@@ -69,7 +69,7 @@ function LoginScreen() {
               loginType === "staff" ? "bg-sky-500 text-white shadow-lg" : "text-slate-400 hover:text-white"
             }`}
           >
-            কর্মী / শেয়ারহোল্ডার
+            {language === "bn" ? "কর্মী / শেয়ারহোল্ডার" : "Staff / Shareholder"}
           </button>
         </div>
 
@@ -85,7 +85,7 @@ function LoginScreen() {
           {loginType === "admin" ? (
             <div className="space-y-4 animate-fade-in">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">ইমেইল ঠিকানা</label>
+                <label className="block text-sm font-medium text-slate-300 mb-1">{language === "bn" ? "ইমেইল ঠিকানা" : "Email Address"}</label>
                 <input
                   type="email"
                   value={email}
@@ -96,7 +96,7 @@ function LoginScreen() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">পাসওয়ার্ড</label>
+                <label className="block text-sm font-medium text-slate-300 mb-1">{language === "bn" ? "পাসওয়ার্ড" : "Password"}</label>
                 <input
                   type="password"
                   value={password}
@@ -110,7 +110,7 @@ function LoginScreen() {
           ) : (
             <div className="space-y-4 animate-fade-in">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">ফোন নাম্বার</label>
+                <label className="block text-sm font-medium text-slate-300 mb-1">{language === "bn" ? "ফোন নাম্বার" : "Phone Number"}</label>
                 <input
                   type="tel"
                   value={phone}
@@ -121,7 +121,7 @@ function LoginScreen() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">গোপন পিন (PIN)</label>
+                <label className="block text-sm font-medium text-slate-300 mb-1">{language === "bn" ? "গোপন পিন (PIN)" : "Secret PIN"}</label>
                 <input
                   type="password"
                   maxLength="4"
@@ -143,7 +143,7 @@ function LoginScreen() {
                 : "bg-gradient-to-r from-sky-500 to-sky-600 text-white hover:from-sky-400 hover:to-sky-500 shadow-sky-500/20"
             }`}
           >
-            প্রবেশ করুন →
+            {language === "bn" ? "প্রবেশ করুন →" : "Login →"}
           </button>
         </form>
       </div>
@@ -161,7 +161,25 @@ function LoginScreen() {
 // ── Main App Shell ───────────────────────────────────────────────
 function AppShell() {
   const { currentUser, hasAccess } = useAuth();
-  const [activePage,    setActivePage]    = useState("dashboard");
+  const { language } = useLanguage();
+  
+  // ১. LocalStorage থেকে আগের পেজ মনে রাখা
+  const [activePage, setActivePage] = useState(() => {
+    return localStorage.getItem("cattleFarmActivePage") || "dashboard";
+  });
+
+  // ২. রিলোড ও Pull-to-refresh বন্ধ করা
+  useEffect(() => {
+    localStorage.setItem("cattleFarmActivePage", activePage);
+    
+    // মোবাইলে নিচের দিকে টানলে যেন রিলোড না হয়
+    document.body.style.overscrollBehaviorY = 'none';
+    
+    return () => {
+      document.body.style.overscrollBehaviorY = 'auto';
+    };
+  }, [activePage]);
+
   const [showAddCattle, setShowAddCattle] = useState(false);
   const [showAddMilk,   setShowAddMilk]   = useState(false);
   const [showAddExp,    setShowAddExp]    = useState(false);
@@ -172,7 +190,7 @@ function AppShell() {
     dashboard:  <Dashboard />,
     cattle:     <CattleList />,
     dairy:      <DairyLog showAddModal={showAddMilk}   onCloseAddModal={() => setShowAddMilk(false)} />,
-    feed:       <FeedInventory />, // এখানে 'feed' কি (key) ব্যবহার করা হয়েছে
+    feed:       <FeedInventory />, 
     finance:    <ExpenseTracker showAddModal={showAddExp} onCloseAddModal={() => setShowAddExp(false)} />,
     reports:    <ReportView />,
     settings:   hasAccess("admin") ? <UserManagement /> : <Dashboard />,
@@ -188,9 +206,12 @@ function AppShell() {
         onAddExpense: () => { setActivePage("finance"); setShowAddExp(true); },
       }}
     >
-      {pages[activePage] || <Dashboard />}
+      {/* ৩. pb-28 যোগ করা হলো যাতে Floating বাটন কোনো লেখাকে না ঢাকে */}
+      <div className="pb-28 lg:pb-8 h-full">
+        {pages[activePage] || <Dashboard />}
+      </div>
 
-      <Modal isOpen={showAddCattle} onClose={() => setShowAddCattle(false)} title="নতুন গরু যুক্ত করুন" size="md">
+      <Modal isOpen={showAddCattle} onClose={() => setShowAddCattle(false)} title={language === "bn" ? "নতুন গরু যুক্ত করুন" : "Add New Cattle"} size="md">
         <AddCattleForm onClose={() => setShowAddCattle(false)} />
       </Modal>
     </MainLayout>
