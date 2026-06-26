@@ -41,7 +41,6 @@ export default function UserManagement() {
   const openEdit = (u) => { setEditTarget(u); setForm({ name: u.name, role: u.role, pin: u.pin, phone: u.phone || "" }); setFormErr(""); };
   const closeAll = () => { setShowForm(false); setEditTarget(null); setForm(EMPTY); setFormErr(""); };
 
-  // ── স্মার্ট পিন লজিক: এডিট মোডে থাকলে অটো-ওভাররাইট হবে না ──
   useEffect(() => {
     if (!editTarget && form.phone && form.phone.length >= 4) {
       const autoPin = form.phone.slice(-4);
@@ -113,44 +112,50 @@ export default function UserManagement() {
           <p className="text-white font-semibold text-sm">সকল ব্যবহারকারী</p>
         </div>
         <div className="divide-y divide-slate-700/30">
-          {users.map((u) => (
-            <div key={u._id || u.id} className="flex items-center justify-between px-4 py-3 hover:bg-slate-700/15 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0
-                  ${u.active === false ? "bg-slate-700 text-slate-500" : "bg-gradient-to-br from-slate-600 to-slate-700 text-white"}`}>
-                  {u.name?.[0]?.toUpperCase()}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-sm font-medium ${u.active === false ? "text-slate-500 line-through" : "text-white"}`}>{u.name}</span>
-                    {(u.id === currentUser?.id || u._id === currentUser?._id) && (
-                      <span className="text-xs px-1.5 py-0.5 bg-amber-400/10 text-amber-400 rounded border border-amber-400/20">আপনি</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className={`text-xs px-2 py-0.5 rounded-full border ${ROLE_STYLES[u.role]}`}>{ROLE_LABELS[u.role]}</span>
-                    {u.phone && <span className="text-slate-500 text-xs">📞 {u.phone}</span>}
-                    {u.createdAt && <span className="text-slate-600 text-xs">যোগ: {u.createdAt}</span>}
-                  </div>
-                </div>
-              </div>
+          {users.map((u) => {
+            // ── বাগ ফিক্স: কে আসল ইউজার তা সঠিকভাবে যাচাই করা ──
+            const isMe = (u._id && currentUser?._id && u._id === currentUser._id) || (u.id && currentUser?.id && u.id === currentUser.id);
 
-              {/* Actions কলাম */}
-              <div className="flex items-center gap-1.5">
-                {(u._id !== currentUser?._id && u.id !== currentUser?.id) && (
-                  <button onClick={() => toggleUserActive(u._id || u.id)} className={`px-2 py-1 rounded text-xs transition-all ${u.active === false ? "text-emerald-400 hover:bg-emerald-400/10" : "text-slate-400 hover:bg-slate-700/50"}`} title={u.active === false ? "সक्रिय করুন" : "নিষ্ক্রিয় করুন"}>
-                    {u.active === false ? "✓ সক্রিয়" : "⏸ নিষ্ক্রিয়"}
-                  </button>
-                )}
-                <button onClick={() => openEdit(u)} className="px-2 py-1 rounded text-xs text-sky-400 hover:bg-sky-400/10 transition-all">✏️ এডিট</button>
-                
-                {/* ── ডিলিট বাটন (নিজেকে ছাড়া অন্য সবাইকে ডিলিট করা যাবে) ── */}
-                {(u._id !== currentUser?._id && u.id !== currentUser?.id) && (
-                  <button onClick={() => setDeleteTarget(u)} className="px-2 py-1 rounded text-xs text-red-400 hover:bg-red-400/10 transition-all" title="মুছে ফেলুন">🗑️</button>
-                )}
+            return (
+              <div key={u._id || u.id} className="flex items-center justify-between px-4 py-3 hover:bg-slate-700/15 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0
+                    ${u.active === false ? "bg-slate-700 text-slate-500" : "bg-gradient-to-br from-slate-600 to-slate-700 text-white"}`}>
+                    {u.name?.[0]?.toUpperCase()}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm font-medium ${u.active === false ? "text-slate-500 line-through" : "text-white"}`}>{u.name}</span>
+                      {/* শুধুমাত্র নিজের নামের পাশে "আপনি" দেখাবে */}
+                      {isMe && (
+                        <span className="text-xs px-1.5 py-0.5 bg-amber-400/10 text-amber-400 rounded border border-amber-400/20">আপনি</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className={`text-xs px-2 py-0.5 rounded-full border ${ROLE_STYLES[u.role]}`}>{ROLE_LABELS[u.role]}</span>
+                      {u.phone && <span className="text-slate-500 text-xs">📞 {u.phone}</span>}
+                      {u.createdAt && <span className="text-slate-600 text-xs">যোগ: {u.createdAt}</span>}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions কলাম */}
+                <div className="flex items-center gap-1.5">
+                  {!isMe && (
+                    <button onClick={() => toggleUserActive(u._id || u.id)} className={`px-2 py-1 rounded text-xs transition-all ${u.active === false ? "text-emerald-400 hover:bg-emerald-400/10" : "text-slate-400 hover:bg-slate-700/50"}`} title={u.active === false ? "সक्रिय করুন" : "নিষ্ক্রিয় করুন"}>
+                      {u.active === false ? "✓ সক্রিয়" : "⏸ নিষ্ক্রিয়"}
+                    </button>
+                  )}
+                  <button onClick={() => openEdit(u)} className="px-2 py-1 rounded text-xs text-sky-400 hover:bg-sky-400/10 transition-all">✏️ এডিট</button>
+                  
+                  {/* নিজেকে ছাড়া অন্য সবাইকে ডিলিট করা যাবে */}
+                  {!isMe && (
+                    <button onClick={() => setDeleteTarget(u)} className="px-2 py-1 rounded text-xs text-red-400 hover:bg-red-400/10 transition-all" title="মুছে ফেলুন">🗑️</button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
