@@ -2,16 +2,16 @@ import { useLanguage } from "../../contexts/LanguageContext";
 import { useAuth } from "../../contexts/AuthContext";
 
 const NAV = [
-  { key: "dashboard", icon: "⊞",  page: "dashboard",   minRole: "shareholder" },
+  { key: "dashboard", icon: "⊞",  page: "dashboard",  minRole: "shareholder" },
   { key: "cattle",    icon: "🐄", page: "cattle",     minRole: "worker" },
   { key: "dairy",     icon: "🥛", page: "dairy",      minRole: "worker" },
   { key: "feed",      icon: "🌾", page: "feed",       minRole: "worker" },
   { key: "finance",   icon: "💰", page: "finance",    minRole: "worker" },
   { key: "reports",   icon: "📊", page: "reports",    minRole: "shareholder" },
-  { key: "settings",  icon: "⚙️",  page: "settings",   minRole: "admin" },
+  { key: "users",     icon: "👥", page: "users",      minRole: "admin" }, // নতুন ইউজার বাটন
+  { key: "settings",  icon: "⚙️",  page: "settings",   minRole: "admin" }, // নতুন সেটিংস বাটন
 ];
 
-// লাইট এবং ডার্ক মোডের জন্য আলাদা কালার স্টাইল যোগ করা হলো
 const ROLE_STYLES = {
   admin:       "text-amber-600 bg-amber-100 border-amber-200 dark:text-amber-400 dark:bg-amber-400/10 dark:border-amber-400/20",
   worker:      "text-sky-600 bg-sky-100 border-sky-200 dark:text-sky-400 dark:bg-sky-400/10 dark:border-sky-400/20",
@@ -19,7 +19,7 @@ const ROLE_STYLES = {
 };
 
 export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { currentUser, logout, hasAccess } = useAuth();
 
   const visibleNav = NAV.filter((item) => hasAccess(item.minRole));
@@ -31,12 +31,12 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
     feed:      t("feedInventory"),
     finance:   t("finance"),
     reports:   t("reports"),
+    users:     language === "bn" ? "ব্যবহারকারী" : "Users", // নাম যোগ করা হলো
     settings:  t("settings"),
   };
 
   return (
     <>
-      {/* Mobile backdrop */}
       {isOpen && (
         <div className="fixed inset-0 bg-black/60 z-30 lg:hidden" onClick={onClose} />
       )}
@@ -49,7 +49,6 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
         ${isOpen ? "translate-x-0" : "-translate-x-full"}
         lg:translate-x-0 lg:static lg:z-auto
       `}>
-        {/* Logo */}
         <div className="px-5 py-5 border-b border-slate-200 dark:border-slate-700/40 transition-colors">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 dark:from-amber-400 dark:to-amber-600 flex items-center justify-center text-xl shadow-lg shadow-amber-500/30 dark:shadow-amber-500/20 flex-shrink-0">
@@ -62,7 +61,6 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
           </div>
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
           {visibleNav.map((item) => {
             const active = activePage === item.page;
@@ -87,7 +85,6 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
           })}
         </nav>
 
-        {/* User card + logout */}
         <div className="px-4 py-4 border-t border-slate-200 dark:border-slate-700/40 transition-colors">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-gradient-to-br dark:from-slate-600 dark:to-slate-700 flex items-center justify-center text-slate-700 dark:text-white font-bold text-sm flex-shrink-0 transition-colors">

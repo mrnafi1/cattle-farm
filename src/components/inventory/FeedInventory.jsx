@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useApp } from "../../contexts/AppContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import Button from "../ui/Button";
@@ -7,15 +7,14 @@ import ConfirmDialog from "../ui/ConfirmDialog";
 
 const FEED_TYPES = ["ভুসি", "খড়", "সাইলেজ", "কাঁচা ঘাস", "দানাদার মিক্স"];
 
-// ইনপুট এবং ফিল্ডে নতুন কালার থিম যুক্ত করা হলো
 const Field = ({ label, children }) => (
   <div><label className="text-[#64748B] dark:text-slate-400 text-xs block mb-1 transition-colors">{label}</label>{children}</div>
 );
 const Input = (props) => (
-  <input {...props} className="w-full bg-[#FFFFFF] dark:bg-slate-700/50 border border-[#E8E6DE] dark:border-slate-600 rounded-lg px-3 py-2 text-[#1A1A2E] dark:text-white text-sm focus:outline-none focus:border-[#F59E0B] dark:focus:border-amber-400/60 placeholder-[#94A3B8] dark:placeholder-slate-500 transition-colors shadow-sm dark:shadow-none" />
+  <input {...props} className="w-full bg-[#FFFFFF] dark:bg-slate-700/50 border border-[#E8E6DE] dark:border-slate-600 rounded-lg px-3 py-2 text-[#1A1A2E] dark:text-white text-sm focus:outline-none focus:border-[#F59E0B] dark:focus:border-amber-400/60 placeholder-[#94A3B8] dark:placeholder-slate-500 transition-colors shadow-sm" />
 );
 const Select = ({ children, ...props }) => (
-  <select {...props} className="w-full bg-[#FFFFFF] dark:bg-slate-700/50 border border-[#E8E6DE] dark:border-slate-600 rounded-lg px-3 py-2 text-[#1A1A2E] dark:text-white text-sm focus:outline-none focus:border-[#F59E0B] dark:focus:border-amber-400/60 transition-colors shadow-sm dark:shadow-none">
+  <select {...props} className="w-full bg-[#FFFFFF] dark:bg-slate-700/50 border border-[#E8E6DE] dark:border-slate-600 rounded-lg px-3 py-2 text-[#1A1A2E] dark:text-white text-sm focus:outline-none focus:border-[#F59E0B] dark:focus:border-amber-400/60 transition-colors shadow-sm">
     {children}
   </select>
 );
@@ -48,6 +47,22 @@ export default function FeedInventory() {
 
   const [editFeedTarget, setEditFeedTarget] = useState(null);
   const [deleteFeedTarget, setDeleteFeedTarget] = useState(null);
+  
+  const [highlightedId, setHighlightedId] = useState(null);
+
+  // সার্চ হাইলাইট ডিটেকশন ইফেক্ট
+  useEffect(() => {
+    const id = sessionStorage.getItem("searchHighlightId");
+    if (id) {
+      setHighlightedId(id);
+      if (activeTab !== "logs") setActiveTab("logs"); // লগ ট্যাবে না থাকলে অটোমেটিক লগ ট্যাবে নিয়ে যাবে
+      const timer = setTimeout(() => {
+        setHighlightedId(null);
+        sessionStorage.removeItem("searchHighlightId");
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [feedLogs]); // feedLogs পরিবর্তন হলেও এটি কাজ করবে
 
   const getFeedTypeName = (type) => {
     if (language === "bn") return type;
@@ -133,7 +148,7 @@ export default function FeedInventory() {
       {activeTab === "stock" && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {inventory.map((item) => (
-            <div key={item._id || item.type} className="bg-[#FFFFFF] dark:bg-slate-800/40 border border-[#E8E6DE] dark:border-slate-700/40 shadow-sm dark:shadow-none rounded-xl p-4 flex flex-col items-center justify-center relative overflow-hidden group transition-colors">
+            <div key={item._id || item.type} className="bg-[#FFFFFF] dark:bg-slate-800/40 border border-[#E8E6DE] dark:border-slate-700/40 shadow-sm rounded-xl p-4 flex flex-col items-center justify-center relative overflow-hidden group transition-colors">
               {item.amount < 50 && (
                 <span className="absolute top-0 right-0 bg-[#EF4444] dark:bg-red-500/80 text-white text-[10px] px-2 py-1 rounded-bl-lg font-bold transition-colors">
                   {language === "bn" ? "অ্যালার্ট" : "Alert"}
@@ -158,7 +173,7 @@ export default function FeedInventory() {
 
       {/* ── Tab Content: Logs ── */}
       {activeTab === "logs" && (
-        <div className="bg-[#FFFFFF] dark:bg-slate-800/40 border border-[#E8E6DE] dark:border-slate-700/40 shadow-sm dark:shadow-none rounded-xl overflow-hidden transition-colors">
+        <div className="bg-[#FFFFFF] dark:bg-slate-800/40 border border-[#E8E6DE] dark:border-slate-700/40 shadow-sm rounded-xl overflow-hidden transition-colors">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -175,31 +190,34 @@ export default function FeedInventory() {
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E8E6DE] dark:divide-slate-700/30">
+              <tbody className="divide-y divide-[#E8E6DE] dark:divide-slate-700/30 transition-colors">
                 {!feedLogs || feedLogs.length === 0 ? (
                   <tr><td colSpan={6} className="text-center py-8 text-[#94A3B8] dark:text-slate-500 transition-colors">{t("noData")}</td></tr>
                 ) : (
-                  [...feedLogs].reverse().map((log, idx) => (
-                    <tr key={log._id || idx} className="hover:bg-[#F5F4EF] dark:hover:bg-slate-700/20 transition-colors">
-                      <td className="px-4 py-3 text-[#64748B] dark:text-slate-300 text-sm transition-colors">{log.date}</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded text-xs transition-colors ${log.category === "in" ? "bg-[#10B981]/10 text-[#10B981] dark:bg-emerald-500/10 dark:text-emerald-400" : "bg-sky-100 text-sky-600 dark:bg-sky-500/10 dark:text-sky-400"}`}>
-                          {log.category === "in" 
-                            ? (language === "bn" ? "স্টক ইন (কেনা)" : "Stock In (Purchased)") 
-                            : (language === "bn" ? "খাওয়ানো হয়েছে" : "Fed to Cattle")}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-[#1A1A2E] dark:text-white text-sm transition-colors">{getFeedTypeName(log.type)}</td>
-                      <td className="px-4 py-3 text-[#F59E0B] dark:text-amber-400 font-medium transition-colors">{log.amount} kg</td>
-                      <td className="px-4 py-3 text-[#64748B] dark:text-slate-400 text-sm transition-colors">{log.note || "—"}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-1">
-                          <button onClick={() => { setEditFeedTarget(log); setFeedForm({ amount: log.amount, date: log.date, type: log.type }); }} className="px-2 py-1 rounded text-xs text-sky-600 bg-sky-50 dark:text-sky-400 dark:hover:bg-sky-400/10 transition-colors">✏️</button>
-                          <button onClick={() => setDeleteFeedTarget(log)} className="px-2 py-1 rounded text-xs text-[#EF4444] bg-red-50 dark:text-red-400 dark:hover:bg-red-400/10 transition-colors">🗑️</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                  [...feedLogs].reverse().map((log, idx) => {
+                    const isHighlighted = log._id === highlightedId || log.id === highlightedId;
+                    return (
+                      <tr key={log._id || idx} className={`transition-all duration-500 ${isHighlighted ? "bg-amber-100/70 border-l-4 border-[#F59E0B] dark:bg-amber-500/20 dark:border-amber-400 animate-pulse font-medium text-amber-900 dark:text-amber-200" : "hover:bg-[#F5F4EF] dark:hover:bg-slate-700/20"}`}>
+                        <td className="px-4 py-3 text-[#64748B] dark:text-slate-300 text-sm transition-colors">{log.date}</td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-1 rounded text-xs transition-colors ${log.category === "in" ? "bg-[#10B981]/10 text-[#10B981] dark:bg-emerald-500/10 dark:text-emerald-400" : "bg-sky-100 text-sky-600 dark:bg-sky-500/10 dark:text-sky-400"}`}>
+                            {log.category === "in" 
+                              ? (language === "bn" ? "স্টক ইন (কেনা)" : "Stock In (Purchased)") 
+                              : (language === "bn" ? "খাওয়ানো হয়েছে" : "Fed to Cattle")}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-[#1A1A2E] dark:text-white text-sm transition-colors">{getFeedTypeName(log.type)}</td>
+                        <td className="px-4 py-3 text-[#F59E0B] dark:text-amber-400 font-medium transition-colors">{log.amount} kg</td>
+                        <td className="px-4 py-3 text-[#64748B] dark:text-slate-400 text-sm transition-colors">{log.note || "—"}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex gap-1">
+                            <button onClick={() => { setEditFeedTarget(log); setFeedForm({ amount: log.amount, date: log.date, type: log.type }); }} className="px-2 py-1 rounded text-xs text-sky-600 bg-sky-50 dark:text-sky-400 dark:hover:bg-sky-400/10 transition-colors">✏️</button>
+                            <button onClick={() => setDeleteFeedTarget(log)} className="px-2 py-1 rounded text-xs text-[#EF4444] bg-red-50 dark:text-red-400 dark:hover:bg-red-400/10 transition-colors">🗑️</button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>

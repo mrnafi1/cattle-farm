@@ -23,6 +23,7 @@ export default function MainLayout({ children, activePage, onNavigate, onFABActi
         <Topbar
           activePage={activePage}
           onMenuToggle={() => setSidebarOpen((prev) => !prev)}
+          onNavigate={onNavigate} /* <-- এই প্রপসটি এখানে যোগ করা হয়েছে */
         />
 
         <main className="flex-1 overflow-y-auto">

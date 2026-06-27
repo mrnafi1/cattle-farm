@@ -27,8 +27,22 @@ export default function CattleList() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [sellTarget, setSellTarget] = useState(null);
   const [deadTarget, setDeadTarget] = useState(null);
+  const [highlightedId, setHighlightedId] = useState(null);
 
   useEffect(() => { if (cattle) setIsLoading(false); }, [cattle]);
+
+  // সার্চ হাইলাইট ডিটেকশন ইফেক্ট
+  useEffect(() => {
+    const id = sessionStorage.getItem("searchHighlightId");
+    if (id) {
+      setHighlightedId(id);
+      const timer = setTimeout(() => {
+        setHighlightedId(null);
+        sessionStorage.removeItem("searchHighlightId");
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [cattle]);
 
   const filtered = cattle.filter((c) => {
     const q = search.toLowerCase();
@@ -79,10 +93,10 @@ export default function CattleList() {
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
         <input type="text" placeholder={`🔍 ${t("search")}...`} value={search} onChange={(e) => setSearch(e.target.value)}
-          className="bg-[#FFFFFF] dark:bg-slate-800/60 border border-[#E8E6DE] dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-[#1A1A2E] dark:text-white placeholder-[#94A3B8] dark:placeholder-slate-500 focus:outline-none focus:border-[#F59E0B] dark:focus:border-amber-400/50 min-w-[180px] shadow-sm dark:shadow-none transition-colors" />
+          className="bg-[#FFFFFF] dark:bg-slate-800/60 border border-[#E8E6DE] dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-[#1A1A2E] dark:text-white placeholder-[#94A3B8] dark:placeholder-slate-500 focus:outline-none focus:border-[#F59E0B] dark:focus:border-amber-400/50 min-w-[180px] shadow-sm transition-colors" />
         
         <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
-          className="bg-[#FFFFFF] dark:bg-slate-800/60 border border-[#E8E6DE] dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-[#1A1A2E] dark:text-slate-300 focus:outline-none focus:border-[#F59E0B] dark:focus:border-amber-400/50 shadow-sm dark:shadow-none transition-colors">
+          className="bg-[#FFFFFF] dark:bg-slate-800/60 border border-[#E8E6DE] dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-[#1A1A2E] dark:text-slate-300 focus:outline-none focus:border-[#F59E0B] dark:focus:border-amber-400/50 shadow-sm transition-colors">
           <option value="all">{t("allStatus")}</option>
           <option value="healthy">{t("healthy")}</option>
           <option value="sick">{t("sick")}</option>
@@ -92,7 +106,7 @@ export default function CattleList() {
         </select>
         
         <select value={filterType} onChange={(e) => setFilterType(e.target.value)}
-          className="bg-[#FFFFFF] dark:bg-slate-800/60 border border-[#E8E6DE] dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-[#1A1A2E] dark:text-slate-300 focus:outline-none focus:border-[#F59E0B] dark:focus:border-amber-400/50 shadow-sm dark:shadow-none transition-colors">
+          className="bg-[#FFFFFF] dark:bg-slate-800/60 border border-[#E8E6DE] dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-[#1A1A2E] dark:text-slate-300 focus:outline-none focus:border-[#F59E0B] dark:focus:border-amber-400/50 shadow-sm transition-colors">
           <option value="all">{t("allType")}</option>
           <option value="dairy">{t("dairy")}</option>
           <option value="fattening">{t("fattening")}</option>
@@ -100,7 +114,7 @@ export default function CattleList() {
       </div>
 
       {/* Table */}
-      <div className="bg-[#FFFFFF] dark:bg-slate-800/40 border border-[#E8E6DE] dark:border-slate-700/40 rounded-xl overflow-hidden shadow-sm dark:shadow-none transition-colors">
+      <div className="bg-[#FFFFFF] dark:bg-slate-800/40 border border-[#E8E6DE] dark:border-slate-700/40 shadow-sm rounded-xl overflow-hidden transition-colors">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -110,48 +124,51 @@ export default function CattleList() {
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#E8E6DE] dark:divide-slate-700/30">
+            <tbody className="divide-y divide-[#E8E6DE] dark:divide-slate-700/30 transition-colors">
               {isLoading ? (
                 <tr><td colSpan={7} className="text-center py-12 text-[#F59E0B] dark:text-amber-400/80 transition-colors">{t("loading")}</td></tr>
               ) : filtered.length === 0 ? (
                 <tr><td colSpan={7} className="text-center py-12 text-[#94A3B8] dark:text-slate-500 transition-colors">{t("noData")}</td></tr>
               ) : (
-                filtered.map((c) => (
-                  <tr key={c._id} className="hover:bg-[#F5F4EF] dark:hover:bg-slate-700/20 transition-colors">
-                    <td className="px-3 py-2">
-                      <div className="w-10 h-10 rounded-lg overflow-hidden bg-[#E8E6DE] dark:bg-slate-700/50 flex items-center justify-center transition-colors">
-                        {c.photo ? <img src={c.photo} alt={c.name} className="w-full h-full object-cover" /> : "🐄"}
-                      </div>
-                    </td>
-                    <td className="px-3 py-2 text-[#F59E0B] dark:text-amber-400 font-mono text-sm transition-colors">{c.tagId}</td>
-                    <td className="px-3 py-2 text-[#1A1A2E] dark:text-white text-sm transition-colors">{c.name}</td>
-                    <td className="px-3 py-2 text-[#64748B] dark:text-slate-400 text-sm transition-colors">{c.breed}</td>
-                    <td className="px-3 py-2 text-[#64748B] dark:text-slate-300 text-sm transition-colors">{c.age} {language === "bn" ? "বছর" : "yrs"}</td>
-                    <td className="px-3 py-2"><Badge status={c.status} label={c.status} /></td>
-                    <td className="px-3 py-2">
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => setSelectedCattle(c)} className="px-2 py-1 rounded text-xs text-[#64748B] dark:text-slate-300 hover:bg-[#E8E6DE] dark:hover:bg-slate-600/50 transition-colors" title={t("view")}>👁</button>
-                        {canEdit && c.status !== "sold" && c.status !== "dead" && (
-                          <>
-                            <button onClick={() => setEditingCattle(c)} className="px-2 py-1 rounded text-xs text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-400/10 transition-colors" title={t("edit")}>✏️</button>
-                            <button onClick={() => setSellTarget(c)} className="px-2 py-1 rounded text-xs text-[#10B981] dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-400/10 transition-colors" title={t("sellCattleTitle")}>🏷️</button>
-                            <button onClick={() => setDeadTarget(c)} className="px-2 py-1 rounded text-xs text-[#EF4444] dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-400/10 transition-colors" title={t("addDeathRecord")}>☠️</button>
-                          </>
-                        )}
-                        {canDelete && (
-                          <button onClick={() => setDeleteTarget(c)} className="px-2 py-1 rounded text-xs text-[#EF4444] dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-400/10 transition-colors" title={t("delete")}>🗑️</button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                filtered.map((c) => {
+                  const isHighlighted = c._id === highlightedId || c.id === highlightedId;
+                  return (
+                    <tr key={c._id} className={`transition-all duration-500 ${isHighlighted ? "bg-amber-100/70 border-l-4 border-[#F59E0B] dark:bg-amber-500/20 dark:border-amber-400 animate-pulse font-medium text-amber-900 dark:text-amber-200" : "hover:bg-[#F5F4EF] dark:hover:bg-slate-700/20"}`}>
+                      <td className="px-3 py-2">
+                        <div className="w-10 h-10 rounded-lg overflow-hidden bg-[#E8E6DE] dark:bg-slate-700/50 flex items-center justify-center transition-colors">
+                          {c.photo ? <img src={c.photo} alt={c.name} className="w-full h-full object-cover" /> : "🐄"}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 text-[#F59E0B] dark:text-amber-400 font-mono text-sm transition-colors">{c.tagId}</td>
+                      <td className="px-3 py-2 text-[#1A1A2E] dark:text-white text-sm transition-colors">{c.name}</td>
+                      <td className="px-3 py-2 text-[#64748B] dark:text-slate-400 text-sm transition-colors">{c.breed}</td>
+                      <td className="px-3 py-2 text-[#64748B] dark:text-slate-300 text-sm transition-colors">{c.age} {language === "bn" ? "বছর" : "yrs"}</td>
+                      <td className="px-3 py-2"><Badge status={c.status} label={c.status} /></td>
+                      <td className="px-3 py-2">
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => setSelectedCattle(c)} className="px-2 py-1 rounded text-xs text-[#64748B] dark:text-slate-300 hover:bg-[#E8E6DE] dark:hover:bg-slate-600/50 transition-colors" title={t("view")}>👁</button>
+                          {canEdit && c.status !== "sold" && c.status !== "dead" && (
+                            <>
+                              <button onClick={() => setEditingCattle(c)} className="px-2 py-1 rounded text-xs text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-400/10 transition-colors" title={t("edit")}>✏️</button>
+                              <button onClick={() => setSellTarget(c)} className="px-2 py-1 rounded text-xs text-[#10B981] dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-400/10 transition-colors" title={t("sellCattleTitle")}>🏷️</button>
+                              <button onClick={() => setDeadTarget(c)} className="px-2 py-1 rounded text-xs text-[#EF4444] dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-400/10 transition-colors" title={t("addDeathRecord")}>☠️</button>
+                            </>
+                          )}
+                          {canDelete && (
+                            <button onClick={() => setDeleteTarget(c)} className="px-2 py-1 rounded text-xs text-[#EF4444] dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-400/10 transition-colors" title={t("delete")}>🗑️</button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Modals */}
+      {/* Modals: Sell Target */}
       <Modal isOpen={!!sellTarget} onClose={() => setSellTarget(null)} title={t("sellCattleTitle")} size="sm">
         <form onSubmit={handleSellSubmit} className="space-y-4">
           <div>
@@ -173,6 +190,7 @@ export default function CattleList() {
         </form>
       </Modal>
 
+      {/* Modals: Dead Target */}
       <Modal isOpen={!!deadTarget} onClose={() => setDeadTarget(null)} title={t("addDeathRecord")} size="sm">
         <form onSubmit={handleDeadSubmit} className="space-y-4">
           <div>
@@ -194,13 +212,17 @@ export default function CattleList() {
         </form>
       </Modal>
 
+      {/* Confirmation and Info Modals */}
       <ConfirmDialog isOpen={!!deleteTarget} message={t("confirm")} onCancel={() => setDeleteTarget(null)} onConfirm={() => { deleteCattle(deleteTarget._id || deleteTarget.id); setDeleteTarget(null); }} />
+      
       <Modal isOpen={!!selectedCattle} onClose={() => setSelectedCattle(null)} title={selectedCattle?.tagId} size="lg">
         {selectedCattle && <CattleProfile cattle={selectedCattle} onEdit={() => { setEditingCattle(selectedCattle); setSelectedCattle(null); }} />}
       </Modal>
+      
       <Modal isOpen={!!editingCattle} onClose={() => setEditingCattle(null)} title={t("edit")} size="md">
         {editingCattle && <EditCattleForm cattle={editingCattle} onClose={() => { setEditingCattle(null); fetchRealCattleData(); }} />}
       </Modal>
+      
       <Modal isOpen={showAddForm} onClose={() => setShowAddForm(false)} title={t("addCattle")} size="md">
         <AddCattleForm onClose={() => { setShowAddForm(false); fetchRealCattleData(); }} />
       </Modal>
