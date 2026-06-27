@@ -1,4 +1,5 @@
 import { useState } from "react";
+import SmartTrend from "./SmartTrend";
 import { useApp } from "../../contexts/AppContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import StatCard from "./StatCard";
@@ -66,7 +67,7 @@ export default function Dashboard() {
           <div className={`absolute -right-6 -bottom-6 w-24 h-24 blur-2xl rounded-full opacity-40 dark:opacity-20 transition-colors ${stats.netProfit >= 0 ? "bg-emerald-300 dark:bg-emerald-500" : "bg-red-300 dark:bg-red-500"}`}></div>
         </div>
       </div>
-
+<SmartTrend />
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <MonthlyIncomeExpenseChart />
