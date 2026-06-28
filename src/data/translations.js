@@ -10,6 +10,7 @@ export const translations = {
     logout: "লগআউট",
     inventory: "খাদ্য মজুত",
     feedLog: "খাবারের হিসাব",
+    feedInventory: "খাদ্য গুদাম",
 
     // Dashboard
     totalCattle: "মোট গরু",
@@ -35,7 +36,7 @@ export const translations = {
     forSale: "বিক্রয়যোগ্য",
     soldOut: "বিক্রি হয়েছে",
     dead: "মৃত",
-    type: "ধরন",
+    type: "ধরन",
     dairy: "ডেইরি",
     fattening: "মোটাতাজাকরণ",
     image: "ছবি",
@@ -51,7 +52,7 @@ export const translations = {
     salePrice: "বিক্রয় মূল্য (৳)",
     saleDate: "বিক্রির তারিখ",
     addDeathRecord: "মৃত্যুর রেকর্ড যুক্ত করুন",
-    deathReason: "মৃত্যুর কারণ",
+    deathReason: "মৃত্যুর कारण",
     estimatedLoss: "আনুমানিক আর্থিক ক্ষতি (৳)",
 
     // Dairy
@@ -126,9 +127,9 @@ export const translations = {
     worker: "কর্মী",
     shareholder: "শেয়ারহোল্ডার",
 
-    // App title
-    appName: "স্মার্ট গবাদি ফার্ম",
-    appSubtitle: "পেশাদার ফার্ম ব্যবস্থাপনা",
+    // ── ফার্মের নতুন সুন্দর নাম ও স্টাইলিশ সাব-টাইটেল ──
+    appName: "বাক্বারাহ এগ্রো",
+    appSubtitle: "✨ আধুনিক ও স্মার্ট খামার ব্যবস্থাপনা",
   },
 
   en: {
@@ -142,6 +143,7 @@ export const translations = {
     logout: "Logout",
     inventory: "Feed Inventory",
     feedLog: "Feed Log",
+    feedInventory: "Feed Inventory",
 
     // Dashboard
     totalCattle: "Total Cattle",
@@ -258,8 +260,8 @@ export const translations = {
     worker: "Worker",
     shareholder: "Shareholder",
 
-    // App title
-    appName: "Smart Cattle Farm",
-    appSubtitle: "Professional Farm Management",
+    // ── New Premium Brand Name ──
+    appName: "BAQARAH AGRO",
+    appSubtitle: "📈 Smart & Premium Farm Management",
   },
 };

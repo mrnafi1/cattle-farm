@@ -36,8 +36,8 @@ function PublicCattleView({ scanId }) {
     return (
       <div className="min-h-screen bg-[#080c18] flex flex-col items-center justify-center p-4 text-center">
         <div className="text-6xl mb-4">🚫</div>
-        <h2 className="text-xl text-white font-bold mb-2">গরুটি খুঁজে পাওয়া যায়নি</h2>
-        <p className="text-slate-400 mb-6 text-sm">এই কিউআর কোডের কোনো তথ্য ডাটাবেজে নেই।</p>
+        <h2 className="text-xl text-white font-bold mb-2">গরুটি খুঁজে পাওয়া যায়নি</h2>
+        <p className="text-slate-400 mb-6 text-sm">এই কিউআর কোডের কোনো তথ্য ডাটাবেজে নেই。</p>
         <button onClick={() => window.location.href='/'} className="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold rounded-xl transition-all">
           লগিন পেজে যান
         </button>
@@ -78,7 +78,7 @@ function PublicCattleView({ scanId }) {
               <p className="text-white font-semibold text-sm">{c.breed || "N/A"}</p>
             </div>
             <div className="bg-slate-900/60 p-3.5 rounded-2xl border border-slate-700/50">
-              <p className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">বয়স (Age)</p>
+              <p className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">বয়স (Age)</p>
               <p className="text-white font-semibold text-sm">{c.age ? `${c.age} বছর` : "N/A"}</p>
             </div>
             <div className="bg-slate-900/60 p-3.5 rounded-2xl border border-slate-700/50">
@@ -93,11 +93,15 @@ function PublicCattleView({ scanId }) {
               </p>
             </div>
             
-            {/* ── নতুন যুক্ত করা বর্তমান ওজন সেকশন (Full Width) ── */}
+            {/* ── বর্তমান ওজন সেকশন (Fixed Object Issue) ── */}
             <div className="bg-slate-900/60 p-4 rounded-2xl border border-amber-500/30 col-span-2 flex justify-between items-center shadow-[inset_0_0_15px_rgba(245,158,11,0.05)]">
               <div>
                 <p className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">বর্তমান ওজন (Current Weight)</p>
-                <p className="text-amber-400 font-bold text-lg">{c.weight ? `${c.weight} কেজি` : "N/A"}</p>
+                <p className="text-amber-400 font-bold text-lg">
+                  {c.weight 
+                    ? `${typeof c.weight === 'object' ? (c.weight.value || c.weight.current || c.weight.weight || 'N/A') : c.weight} কেজি` 
+                    : "N/A"}
+                </p>
               </div>
               <div className="text-3xl opacity-90">⚖️</div>
             </div>
@@ -203,7 +207,7 @@ function AppShell() {
   const [showAddMilk,   setShowAddMilk]   = useState(false);
   const [showAddExp,    setShowAddExp]    = useState(false);
 
-  // ── স্মার্ট লজিক: স্ক্যান করলে সবসময় আগে পাব্লিক আইডি কার্ড দেখাবে ──
+  // ── স্মার্ট লজিক: স্ক্যান করলে সবসময় আগে পাব্লিক আইডি কার্ড দেখাবে ──
   if (scanId) {
     return <PublicCattleView scanId={scanId} />;
   }
