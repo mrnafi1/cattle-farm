@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { AppProvider, useApp } from "./contexts/AppContext"; // useApp ইমপোর্ট করা হয়েছে
+import { AppProvider, useApp } from "./contexts/AppContext";
 import { LanguageProvider, useLanguage } from "./contexts/LanguageContext";
 import MainLayout from "./components/layout/MainLayout";
 import Dashboard from "./components/dashboard/Dashboard";
@@ -15,9 +15,10 @@ import AddCattleForm from "./components/cattle/AddCattleForm";
 import FeedInventory from "./components/inventory/FeedInventory";
 import PWAInstallBanner from "./components/ui/PWAInstallBanner";
 
-// ── নতুন ফিচার: পাবলিক ডিজিটাল আইডি কার্ড (লগিন ছাড়া স্ক্যান ভিউ) ──
+// ── নতুন ফিচার: পাবলিক ডিজিটাল আইডি কার্ড (বর্তমান ওজন সহ) ──
 function PublicCattleView({ scanId }) {
   const { cattle } = useApp();
+  const { currentUser } = useAuth();
   const { language } = useLanguage();
 
   if (!cattle || cattle.length === 0) {
@@ -91,10 +92,19 @@ function PublicCattleView({ scanId }) {
                 {c.status === "healthy" ? "সুস্থ" : c.status === "sick" ? "অসুস্থ" : "বিক্রির জন্য"}
               </p>
             </div>
+            
+            {/* ── নতুন যুক্ত করা বর্তমান ওজন সেকশন (Full Width) ── */}
+            <div className="bg-slate-900/60 p-4 rounded-2xl border border-amber-500/30 col-span-2 flex justify-between items-center shadow-[inset_0_0_15px_rgba(245,158,11,0.05)]">
+              <div>
+                <p className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">বর্তমান ওজন (Current Weight)</p>
+                <p className="text-amber-400 font-bold text-lg">{c.weight ? `${c.weight} কেজি` : "N/A"}</p>
+              </div>
+              <div className="text-3xl opacity-90">⚖️</div>
+            </div>
           </div>
 
           <button onClick={() => window.location.href='/'} className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl border border-slate-700 transition-all text-xs font-bold uppercase tracking-widest">
-            🔒 Admin / Staff Login
+            {currentUser ? "🔙 ড্যাশবোর্ডে ফিরে যান" : "🔒 Admin / Staff Login"}
           </button>
         </div>
       </div>
@@ -180,17 +190,8 @@ function AppShell() {
   const scanId = params.get("viewCattle");
 
   const [activePage, setActivePage] = useState(() => {
-    if (scanId && currentUser) return "cattle"; // লগিন করা থাকলে সরাসরি গরুর লিস্টে যাবে
     return localStorage.getItem("cattleFarmActivePage") || "dashboard";
   });
-
-  useEffect(() => {
-    // লগিন করা অবস্থায় কেউ স্ক্যান করলে তাকে লিস্টে নিয়ে ওই গরুটি হাইলাইট করে দেওয়া হবে
-    if (scanId && currentUser) {
-      sessionStorage.setItem("searchHighlightId", scanId);
-      window.history.replaceState({}, document.title, "/"); 
-    }
-  }, [scanId, currentUser]);
 
   useEffect(() => {
     localStorage.setItem("cattleFarmActivePage", activePage);
@@ -202,8 +203,8 @@ function AppShell() {
   const [showAddMilk,   setShowAddMilk]   = useState(false);
   const [showAddExp,    setShowAddExp]    = useState(false);
 
-  // ── স্মার্ট লজিক: লগিন করা না থাকলে এবং কিউআর স্ক্যান করলে পাব্লিক কার্ড দেখাবে ──
-  if (scanId && !currentUser) {
+  // ── স্মার্ট লজিক: স্ক্যান করলে সবসময় আগে পাব্লিক আইডি কার্ড দেখাবে ──
+  if (scanId) {
     return <PublicCattleView scanId={scanId} />;
   }
 
