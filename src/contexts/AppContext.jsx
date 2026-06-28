@@ -3,22 +3,24 @@ import { createContext, useContext, useState, useEffect, useCallback } from "rea
 const AppContext = createContext();
 
 export function AppProvider({ children }) {
-  const [cattle,   setCattle]   = useState([]);
-  const [milkLogs, setMilkLogs] = useState([]);
-  const [expenses, setExpenses] = useState([]);
-  const [incomes,  setIncomes]  = useState([]);
-  const [sales,    setSales]    = useState([]);
+  const [cattle,    setCattle]    = useState([]);
+  const [milkLogs,  setMilkLogs]  = useState([]);
+  const [expenses,  setExpenses]  = useState([]);
+  const [incomes,   setIncomes]   = useState([]);
+  const [sales,     setSales]     = useState([]);
   const [inventory, setInventory] = useState([]);
   const [feedLogs,  setFeedLogs]  = useState([]);
+  const [funds,     setFunds]     = useState([]); // ── নতুন: ফান্ডের স্টেট ──
   
   const [isOnline, setIsOnline] = useState(() => navigator.onLine);
   const [toasts,   setToasts]   = useState([]);
 
   const fetchAllData = async () => {
     try {
-      const urls = ["cattles", "milk_logs", "expenses", "incomes", "sales", "inventory", "feed_logs"];
-      const [catRes, milkRes, expRes, incRes, saleRes, invRes, feedRes] = await Promise.all(
-        urls.map(url => fetch(`https://cattle-farm-server.onrender.com/${url}`))
+      // ── নতুন: 'funds' URL যুক্ত করা হলো ──
+      const urls = ["cattles", "milk_logs", "expenses", "incomes", "sales", "inventory", "feed_logs", "funds"];
+      const [catRes, milkRes, expRes, incRes, saleRes, invRes, feedRes, fundRes] = await Promise.all(
+        urls.map(url => fetch(`https://cattle-farm-server.onrender.com/${url}`).catch(() => ({ json: () => [] }))) // Fallback added
       );
 
       setCattle(await catRes.json());
@@ -28,6 +30,15 @@ export function AppProvider({ children }) {
       setSales(await saleRes.json());
       setInventory(await invRes.json());
       setFeedLogs(await feedRes.json());
+      
+      // ── নতুন: ফান্ড ফেচিং (Error handle সহ) ──
+      try {
+        const fundsData = await fundRes.json();
+        setFunds(Array.isArray(fundsData) ? fundsData : []);
+      } catch (e) {
+        setFunds([]);
+      }
+
     } catch (error) { console.error("ডাটা আনতে সমস্যা:", error); }
   };
 
@@ -57,6 +68,42 @@ export function AppProvider({ children }) {
     setTimeout(() => setToasts((p) => p.filter((t) => t.id !== id)), 3500);
   }, []);
   const removeToast = useCallback((id) => setToasts((p) => p.filter((t) => t.id !== id)), []);
+
+  // ── Shareholder Funds CRUD (নতুন যুক্ত করা হলো) ──
+  const addFund = async (data) => {
+    try {
+      const res = await fetch("https://cattle-farm-server.onrender.com/funds", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const newFund = await res.json();
+      setFunds((p) => [{ ...data, _id: newFund.insertedId }, ...p]);
+      addToast("ফান্ড সংরক্ষিত হয়েছে ✓");
+    } catch (error) { addToast("ফান্ড সেভ করতে সমস্যা হয়েছে", "error"); }
+  };
+
+  const updateFund = async (id, data) => {
+    try {
+      const res = await fetch(`https://cattle-farm-server.onrender.com/funds/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        setFunds((p) => p.map((f) => (f._id === id || f.id === id) ? { ...f, ...data } : f));
+        addToast("ফান্ড আপডেট হয়েছে ✓");
+      }
+    } catch (error) { addToast("আপডেট করা সম্ভব হয়নি", "error"); }
+  };
+
+  const deleteFund = async (id) => {
+    try {
+      await fetch(`https://cattle-farm-server.onrender.com/funds/${id}`, { method: "DELETE" });
+      setFunds((prev) => prev.filter((f) => f._id !== id && f.id !== id));
+      addToast("ফান্ডের রেকর্ড মুছে ফেলা হয়েছে", "error");
+    } catch (error) { addToast("মুছে ফেলতে সমস্যা হয়েছে", "error"); }
+  };
 
   // ── Expense & Income CRUD ──
   const addExpense = async (data) => {
@@ -131,7 +178,6 @@ export function AppProvider({ children }) {
 
   // ── Cattle CRUD ──
   const addCattle = async (data) => {
-    // ডুপ্লিকেট ট্যাগ আইডি চেক (সমস্যা ৪ সমাধান)
     const isDuplicate = cattle.some(c => c.tagId.toLowerCase() === data.tagId.toLowerCase());
     if (isDuplicate) {
       addToast(`"${data.tagId}" ট্যাগটি ইতিমধ্যে ব্যবহৃত হচ্ছে!`, "error");
@@ -147,14 +193,12 @@ export function AppProvider({ children }) {
       const newCattle = await res.json();
       const cowWithId = { ...data, _id: newCattle.insertedId };
       
-      // লোকাল স্টেট সাথে সাথে আপডেট (সমস্যা ৯ সমাধান)
       setCattle((prev) => [cowWithId, ...prev]);
       
-      // গরু কেনার খরচ অটোমেটিক যুক্ত করা (সমস্যা ৫ সমাধান)
       if (Number(data.purchasePrice) > 0) {
         await addExpense({
           date: data.purchaseDate || new Date().toISOString().slice(0, 10),
-          category: "other", // বা আপনি 'cattle_purchase' নামে নতুন ক্যাটাগরি দিতে পারেন
+          category: "other", 
           amount: Number(data.purchasePrice),
           description: `নতুন গরু ক্রয় (ট্যাগ: ${data.tagId})`,
         });
@@ -414,11 +458,12 @@ export function AppProvider({ children }) {
 
   return (
     <AppContext.Provider value={{
-      cattle, milkLogs, expenses, incomes, sales, inventory, feedLogs,
-      addCattle, updateCattle, deleteCattle, fetchRealCattleData, fetchAllData, // addCattle যুক্ত করা হয়েছে
+      cattle, milkLogs, expenses, incomes, sales, inventory, feedLogs, funds, // ── funds যোগ করা হলো
+      addCattle, updateCattle, deleteCattle, fetchRealCattleData, fetchAllData,
       addMilkLog, updateMilkLog, deleteMilkLog,
       addExpense, updateExpense, deleteExpense,
       addIncome, updateIncome, deleteIncome,
+      addFund, updateFund, deleteFund, // ── নতুন ফাংশনগুলো যোগ করা হলো
       sellCattle, markCattleDead,
       addInventoryStock, addFeedLog, updateInventoryStock, deleteInventoryStock, updateFeedLog, deleteFeedLog,
       stats, toasts, addToast, removeToast, isOnline,
