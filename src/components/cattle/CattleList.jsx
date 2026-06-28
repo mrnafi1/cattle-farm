@@ -16,6 +16,7 @@ function CattleSkeleton() {
     <>
       {[1, 2, 3, 4, 5].map((n) => (
         <tr key={n} className="animate-pulse border-b border-[#E8E6DE] dark:border-slate-700/50">
+          <td className="px-3 py-3 w-10"><div className="w-4 h-4 bg-[#E8E6DE] dark:bg-slate-700/50 rounded"></div></td>
           <td className="px-3 py-3"><div className="w-10 h-10 bg-[#E8E6DE] dark:bg-slate-700/50 rounded-lg"></div></td>
           <td className="px-3 py-3"><div className="h-4 bg-[#E8E6DE] dark:bg-slate-700/50 rounded w-16"></div></td>
           <td className="px-3 py-3"><div className="h-4 bg-[#E8E6DE] dark:bg-slate-700/50 rounded w-24"></div></td>
@@ -30,14 +31,14 @@ function CattleSkeleton() {
 }
 
 export default function CattleList() {
-  const { cattle, deleteCattle, fetchRealCattleData, sellCattle, markCattleDead } = useApp(); 
+  const { cattle, deleteCattle, fetchRealCattleData, sellCattle, markCattleDead, updateCattle, addToast } = useApp(); 
   const { t, language } = useLanguage();
   const { hasAccess } = useAuth();
 
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   
-  // ফিল্টার ড্রয়ারের স্টেটসমূহ
+  // ফিল্টার ড্রয়ারের স্টেটসমূহ
   const [showFilterDrawer, setShowFilterDrawer] = useState(false);
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterType, setFilterType] = useState("all");
@@ -53,7 +54,11 @@ export default function CattleList() {
   const [deadTarget, setDeadTarget] = useState(null);
   const [highlightedId, setHighlightedId] = useState(null);
 
-  // ১ সেকেন্ডের আর্টিফিসিয়াল ডিলে সহ স্কেলিটন লোডার
+  // ── 💡 Bulk Selection & Action States ──
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [bulkVacForm, setBulkVacForm] = useState({ name: "", date: new Date().toISOString().slice(0, 10), nextDue: "" });
+
   useEffect(() => {
     if (cattle && cattle.length > 0) {
       const timer = setTimeout(() => setIsLoading(false), 800);
@@ -62,21 +67,20 @@ export default function CattleList() {
       setIsLoading(false);
     }
   }, [cattle]);
-// QR Code স্ক্যান করে আসলে অটোমেটিক প্রোফাইল ওপেন করার লজিক
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const viewId = params.get("viewCattle");
     
     if (viewId && cattle && cattle.length > 0) {
-      // আইডি মিলিয়ে গরুটিকে খুঁজে বের করা
       const targetCattle = cattle.find(c => String(c._id) === viewId || String(c.id) === viewId);
       if (targetCattle) {
-        setSelectedCattle(targetCattle); // প্রোফাইল ওপেন করা
-        // URL থেকে স্ক্যানিং ট্যাগ সরিয়ে ফেলা (যাতে রিফ্রেশ দিলে বারবার ওপেন না হয়)
+        setSelectedCattle(targetCattle); 
         window.history.replaceState(null, "", window.location.pathname);
       }
     }
   }, [cattle]);
+
   useEffect(() => {
     const id = sessionStorage.getItem("searchHighlightId");
     if (id) {
@@ -89,14 +93,11 @@ export default function CattleList() {
     }
   }, [cattle]);
 
-  // ইউনিক ব্রিড (জাত) এর তালিকা বের করা ফিল্টারের জন্য
   const breedsList = useMemo(() => {
     if (!cattle) return [];
-    const bSet = new Set(cattle.map(c => c.breed).filter(Boolean));
-    return Array.from(bSet);
+    return Array.from(new Set(cattle.map(c => c.breed).filter(Boolean)));
   }, [cattle]);
 
-  // অ্যাডভান্সড মাল্টি-লেভেল ফিল্টারিং ও সর্টিং লজিক
   const filtered = cattle.filter((c) => {
     const q = search.toLowerCase();
     const matchSearch = c.tagId?.toLowerCase().includes(q) || c.name?.toLowerCase().includes(q) || c.breed?.toLowerCase().includes(q);
@@ -126,6 +127,45 @@ export default function CattleList() {
     setDeadTarget(null);
   };
 
+  // ── 💡 Bulk Selection Logic ──
+  const toggleSelection = (id) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filtered.length) {
+      setSelectedIds([]); // Deselect all
+    } else {
+      setSelectedIds(filtered.map(c => c._id || c.id)); // Select all current filtered
+    }
+  };
+
+  const handleBulkVaccinate = async () => {
+    if (!bulkVacForm.name || !bulkVacForm.date || !bulkVacForm.nextDue) {
+      return addToast("সব তথ্য পূরণ করুন", "error");
+    }
+
+    try {
+      // Promise.all দিয়ে সব গরুর ডেটা একসাথে আপডেট করা
+      await Promise.all(
+        selectedIds.map(async (id) => {
+          const cow = cattle.find(c => (c._id || c.id) === id);
+          if (cow) {
+            const newList = [...(cow.vaccineHistory || []), bulkVacForm];
+            await updateCattle(id, { vaccineHistory: newList });
+          }
+        })
+      );
+      
+      addToast(language === "bn" ? `${selectedIds.length} টি গরুকে সফলভাবে টিকা দেওয়া হয়েছে ✓` : `Successfully vaccinated ${selectedIds.length} cattle ✓`);
+      setSelectedIds([]); // Clear selection after success
+      setShowBulkModal(false);
+      setBulkVacForm({ name: "", date: new Date().toISOString().slice(0, 10), nextDue: "" });
+    } catch (error) {
+      addToast("আপডেট করতে সমস্যা হয়েছে", "error");
+    }
+  };
+
   return (
     <div className="space-y-4 relative overflow-hidden">
       {/* Header */}
@@ -136,7 +176,15 @@ export default function CattleList() {
             {cattle.length} {language === "bn" ? "টি গরু নিবন্ধিত" : "cattle registered"}
           </p>
         </div>
-        {canEdit && <Button onClick={() => setShowAddForm(true)}>+ {t("addCattle")}</Button>}
+        <div className="flex gap-2">
+          {/* Bulk Action Button */}
+          {selectedIds.length > 0 && canEdit && (
+            <Button onClick={() => setShowBulkModal(true)} className="bg-purple-600 hover:bg-purple-700 border-none animate-fade-in shadow-lg shadow-purple-500/30">
+              💉 {language === "bn" ? `একসাথে টিকা দিন (${selectedIds.length})` : `Bulk Vaccinate (${selectedIds.length})`}
+            </Button>
+          )}
+          {canEdit && <Button onClick={() => setShowAddForm(true)}>+ {t("addCattle")}</Button>}
+        </div>
       </div>
 
       {/* Search and Filter Trigger */}
@@ -144,13 +192,12 @@ export default function CattleList() {
         <input type="text" placeholder={`🔍 ${t("search")}...`} value={search} onChange={(e) => setSearch(e.target.value)}
           className="flex-1 bg-[#FFFFFF] dark:bg-slate-800/60 border border-[#E8E6DE] dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-[#1A1A2E] dark:text-white placeholder-[#94A3B8] focus:outline-none focus:border-[#F59E0B] shadow-sm transition-colors" />
         
-        {/* অ্যাডভান্সড ফিল্টার বাটন */}
         <button onClick={() => setShowFilterDrawer(true)} className="px-4 py-2 bg-[#F5F4EF] dark:bg-slate-800/80 text-sm font-semibold text-[#1A1A2E] dark:text-slate-300 rounded-lg border border-[#E8E6DE] dark:border-slate-700 hover:bg-[#E8E6DE] dark:hover:bg-slate-700 flex items-center gap-1.5 transition-all">
           ⚙️ {language === "bn" ? "ফিল্টার করুন" : "Filter"}
         </button>
       </div>
 
-      {/* ── অ্যাডভান্সড ফিল্টার স্লাইড-আউট ড্রয়ার ── */}
+      {/* ── Filter Drawer ── */}
       {showFilterDrawer && (
         <div className="fixed inset-0 z-50 flex justify-end">
           <div className="absolute inset-0 bg-[#1A1A2E]/40 dark:bg-black/60 backdrop-blur-sm transition-opacity" onClick={() => setShowFilterDrawer(false)} />
@@ -209,6 +256,14 @@ export default function CattleList() {
           <table className="w-full">
             <thead>
               <tr className="bg-[#F5F4EF] dark:bg-transparent border-b border-[#E8E6DE] dark:border-slate-700/50 transition-colors">
+                <th className="px-4 py-3 w-10">
+                  <input 
+                    type="checkbox" 
+                    className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 cursor-pointer"
+                    checked={filtered.length > 0 && selectedIds.length === filtered.length}
+                    onChange={toggleSelectAll}
+                  />
+                </th>
                 {[t("image"), t("tag"), t("name"), t("breed"), t("age"), t("status"), t("action")].map((h) => (
                   <th key={h} className="text-left px-3 py-3 text-xs font-semibold text-[#64748B] dark:text-slate-400 uppercase tracking-wider">{h}</th>
                 ))}
@@ -218,12 +273,23 @@ export default function CattleList() {
               {isLoading ? (
                 <CattleSkeleton />
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={7} className="text-center py-12 text-[#94A3B8] dark:text-slate-500">{t("noData")}</td></tr>
+                <tr><td colSpan={8} className="text-center py-12 text-[#94A3B8] dark:text-slate-500">{t("noData")}</td></tr>
               ) : (
                 filtered.map((c) => {
-                  const isHighlighted = c._id === highlightedId || c.id === highlightedId;
+                  const id = c._id || c.id;
+                  const isHighlighted = id === highlightedId;
+                  const isSelected = selectedIds.includes(id);
+
                   return (
-                    <tr key={c._id || c.id} className={`transition-all duration-500 ${isHighlighted ? "bg-amber-100/70 border-l-4 border-[#F59E0B] dark:bg-amber-500/20 dark:border-amber-400 animate-pulse font-medium text-amber-900 dark:text-amber-200" : "hover:bg-[#F5F4EF] dark:hover:bg-slate-700/20"}`}>
+                    <tr key={id} className={`transition-all duration-300 ${isHighlighted ? "bg-amber-100/70 border-l-4 border-[#F59E0B] dark:bg-amber-500/20 dark:border-amber-400 animate-pulse font-medium text-amber-900 dark:text-amber-200" : isSelected ? "bg-purple-50 dark:bg-purple-900/20" : "hover:bg-[#F5F4EF] dark:hover:bg-slate-700/20"}`}>
+                      <td className="px-4 py-2">
+                        <input 
+                          type="checkbox" 
+                          className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 cursor-pointer"
+                          checked={isSelected}
+                          onChange={() => toggleSelection(id)}
+                        />
+                      </td>
                       <td className="px-3 py-2">
                         <div className="w-10 h-10 rounded-lg overflow-hidden bg-[#E8E6DE] dark:bg-slate-700/50 flex items-center justify-center transition-colors">
                           {c.photo ? <img src={c.photo} alt={c.name} className="w-full h-full object-cover" /> : "🐄"}
@@ -256,7 +322,33 @@ export default function CattleList() {
         </div>
       </div>
 
-      {/* Modals */}
+      {/* ── Modals ── */}
+      <Modal isOpen={showBulkModal} onClose={() => setShowBulkModal(false)} title={language === "bn" ? "একসাথে টিকা দিন" : "Bulk Vaccination"} size="sm">
+        <div className="space-y-4">
+          <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-500/30 p-3 rounded-lg text-sm text-purple-700 dark:text-purple-300">
+            {language === "bn" ? `আপনি মোট ${selectedIds.length} টি গরু নির্বাচন করেছেন।` : `You have selected ${selectedIds.length} cattle.`}
+          </div>
+          <div>
+            <label className="text-[#64748B] dark:text-slate-400 text-xs block mb-1">টিকার নাম / कृমির ওষুধ</label>
+            <input value={bulkVacForm.name} onChange={(e) => setBulkVacForm({...bulkVacForm, name: e.target.value})} placeholder="e.g. FMD / BQ" required className="w-full bg-[#FFFFFF] dark:bg-slate-700/50 border border-[#E8E6DE] dark:border-slate-600 rounded-lg px-3 py-2 text-[#1A1A2E] dark:text-white text-sm focus:border-[#F59E0B] focus:outline-none transition-colors" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[#64748B] dark:text-slate-400 text-xs block mb-1">দেওয়ার তারিখ</label>
+              <input type="date" value={bulkVacForm.date} onChange={(e) => setBulkVacForm({...bulkVacForm, date: e.target.value})} required className="w-full bg-[#FFFFFF] dark:bg-slate-700/50 border border-[#E8E6DE] dark:border-slate-600 rounded-lg px-3 py-2 text-[#1A1A2E] dark:text-white text-sm focus:border-[#F59E0B] focus:outline-none transition-colors" />
+            </div>
+            <div>
+              <label className="text-[#64748B] dark:text-slate-400 text-xs block mb-1">পরবর্তী টিকার তারিখ</label>
+              <input type="date" value={bulkVacForm.nextDue} onChange={(e) => setBulkVacForm({...bulkVacForm, nextDue: e.target.value})} required className="w-full bg-[#FFFFFF] dark:bg-slate-700/50 border border-[#E8E6DE] dark:border-slate-600 rounded-lg px-3 py-2 text-[#1A1A2E] dark:text-white text-sm focus:border-[#F59E0B] focus:outline-none transition-colors" />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="secondary" onClick={() => setShowBulkModal(false)}>{t("cancel")}</Button>
+            <Button onClick={handleBulkVaccinate} className="bg-purple-600 hover:bg-purple-700 border-none">{t("save")}</Button>
+          </div>
+        </div>
+      </Modal>
+
       <Modal isOpen={!!sellTarget} onClose={() => setSellTarget(null)} title={t("sellCattleTitle")} size="sm">
         <form onSubmit={handleSellSubmit} className="space-y-4">
           <div>
