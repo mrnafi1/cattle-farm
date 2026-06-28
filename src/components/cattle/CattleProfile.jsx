@@ -37,7 +37,8 @@ export default function CattleProfile({ cattle, onEdit }) {
 
   const setV = (k, v) => setVacForm((p) => ({ ...p, [k]: v }));
 
-  // বীজ দেওয়ার তারিখ ইনপুট দিলে অটোমেটিক বাছুর হওয়ার সম্ভাব্য তারিখ (২৮৩ দিন পর) হিসাব করা
+  // ── অটোমেটেড ক্যালকুলেশন লজিক ──
+  // বীজ দেওয়ার তারিখ ইনপুট দিলে অটোমেটিক বাছুর হওয়ার সম্ভাব্য তারিখ (২৮৩ দিন পর) হিসাব করা
   useEffect(() => {
     if (breedForm.breedingDate && !cattle.breedingInfo?.expectedDelivery) {
       const bDate = new Date(breedForm.breedingDate);
@@ -50,7 +51,7 @@ export default function CattleProfile({ cattle, onEdit }) {
     const cattleId = cattle._id || cattle.id;
     await updateCattle(cattleId, { breedingInfo: breedForm });
     setShowBreedForm(false);
-    addToast(language === "bn" ? "প্রজনন তথ্য সংরক্ষিত হয়েছে ✓" : "Breeding info saved ✓");
+    addToast(language === "bn" ? "প্রজনন তথ্য সংরক্ষিত হয়েছে ✓" : "Breeding info saved ✓");
   };
 
   const openAdd = () => { setVacForm(EMPTY_VAC); setEditingIdx(null); setShowVacForm(true); };
@@ -88,20 +89,33 @@ export default function CattleProfile({ cattle, onEdit }) {
     }
   };
 
-  // QR Code URL (গুগল চার্ট এপিআই দিয়ে জেনারেট করা, যা লাইভ কাজ করবে)
- // বর্তমান ওয়েবসাইটের লিংকের সাথে গরুর আইডি জুড়ে দেওয়া
+  // QR Code URL
   const appUrl = window.location.origin; 
   const profileLink = `${appUrl}/?viewCattle=${cattle._id || cattle.id}`;
-  
-  // সেই লিংকের QR কোড জেনারেট করা
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(profileLink)}`;
-  // প্রেগনেন্সি দিন গণনা
-  const getDeliveryDaysLeft = () => {
-    if (!cattle.breedingInfo?.expectedDelivery || cattle.breedingInfo?.status !== "positive") return null;
-    const diff = new Date(cattle.breedingInfo.expectedDelivery) - new Date();
-    return Math.ceil(diff / (1000 * 60 * 60 * 24));
-  };
-  const daysLeft = getDeliveryDaysLeft();
+  
+  // ── স্মার্ট প্রেগন্যান্সি ট্র্যাকিং ক্যালকুলেশন ──
+  let daysPregnant = 0;
+  let daysLeft = null;
+  let progressPercentage = 0;
+
+  if (cattle.breedingInfo?.status === "positive" && cattle.breedingInfo?.breedingDate) {
+    const bDate = new Date(cattle.breedingInfo.breedingDate);
+    const today = new Date();
+    
+    // কত দিন গর্ভবতী (Current Date - Breeding Date)
+    daysPregnant = Math.max(0, Math.floor((today - bDate) / (1000 * 60 * 60 * 24)));
+    
+    if (cattle.breedingInfo.expectedDelivery) {
+      const eDate = new Date(cattle.breedingInfo.expectedDelivery);
+      daysLeft = Math.ceil((eDate - today) / (1000 * 60 * 60 * 24));
+    } else {
+      daysLeft = 283 - daysPregnant;
+    }
+    
+    // প্রোগ্রেস পার্সেন্টেজ (সর্বোচ্চ ১০০%)
+    progressPercentage = Math.min(100, Math.max(0, (daysPregnant / 283) * 100));
+  }
 
   return (
     <div className="space-y-5">
@@ -113,7 +127,7 @@ export default function CattleProfile({ cattle, onEdit }) {
         <div className="text-center sm:text-left space-y-1.5 flex-1">
           <h4 className="text-sm font-bold text-[#1A1A2E] dark:text-white">{language === "bn" ? "ডিজিটাল স্মার্ট ট্যাগ (QR Code)" : "Digital Smart Tag"}</h4>
           <p className="text-xs text-[#64748B] dark:text-slate-400">
-            {language === "bn" ? "এই কিউআর কোডটি প্রিন্ট করে গরুর গলার ট্যাগে ব্যবহার করতে পারবেন। যেকোনো মোবাইল দিয়ে স্ক্যান করলেই এই প্রোফাইলটি দেখা যাবে।" : "Print this QR code for the cattle collar tag to quickly access profile data."}
+            {language === "bn" ? "এই কিউআর কোডটি প্রিন্ট করে গরুর গলার ট্যাগে ব্যবহার করতে পারবেন। যেকোনো মোবাইল দিয়ে স্ক্যান করলেই এই প্রোফাইলটি দেখা যাবে।" : "Print this QR code for the cattle collar tag to quickly access profile data."}
           </p>
           <button onClick={() => window.print()} className="text-xs font-semibold px-2.5 py-1 bg-white dark:bg-slate-800 border border-[#E8E6DE] dark:border-slate-600 rounded-md text-[#1A1A2E] dark:text-slate-200 hover:bg-[#F5F4EF] transition-all">
             🖨️ {language === "bn" ? "ট্যাগ প্রিন্ট করুন" : "Print Tag"}
@@ -151,67 +165,97 @@ export default function CattleProfile({ cattle, onEdit }) {
         <Badge status={cattle.status} label={cattle.status === "healthy" ? t("healthy") : cattle.status === "sick" ? t("sick") : t("forSale")} />
       </div>
 
-      {/* ── ২. પ્રজনন ও প্রেগনেন্সি ট্র্যাকার সেকশন ── */}
+      {/* ── ২. প্রজনন ও প্রেগনেন্সি ট্র্যাকার সেকশন ── */}
       {cattle.type === "dairy" && (
-        <div className="bg-[#FFFFFF] dark:bg-slate-800/30 border border-[#E8E6DE] dark:border-slate-700/40 rounded-xl p-4">
+        <div className="bg-[#FFFFFF] dark:bg-slate-800/30 border border-[#E8E6DE] dark:border-slate-700/40 rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <p className="text-[#1A1A2E] dark:text-white font-semibold text-sm">🤰 {language === "bn" ? "প্রজনন ও গর্ভধারণ রেকর্ড" : "Breeding & Pregnancy"}</p>
-            <button onClick={() => setShowBreedForm(!showBreedForm)} className="text-xs px-2.5 py-1.5 bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-500/20 rounded-lg font-medium">
+            <button onClick={() => setShowBreedForm(!showBreedForm)} className="text-xs px-2.5 py-1.5 bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-500/20 rounded-lg font-medium transition-colors hover:bg-purple-100">
               {showBreedForm ? t("cancel") : `✏️ ${language === "bn" ? "রেকর্ড আপডেট" : "Edit Record"}`}
             </button>
           </div>
 
           {showBreedForm ? (
-            <div className="space-y-3 pt-1">
+            <div className="space-y-3 pt-2">
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-xs text-[#64748B] dark:text-slate-400 block mb-1">{language === "bn" ? "বীজ দেওয়ার তারিখ" : "Breeding Date"}</label>
+                  <label className="text-xs text-[#64748B] dark:text-slate-400 block mb-1">{language === "bn" ? "বীজ দেওয়ার তারিখ" : "Breeding Date"}</label>
                   <Input type="date" value={breedForm.breedingDate} onChange={(e) => setBreedForm({ ...breedForm, breedingDate: e.target.value })} />
                 </div>
                 <div>
-                  <label className="text-xs text-[#64748B] dark:text-slate-400 block mb-1">{language === "bn" ? "ষাঁড়ের জাত / সিমেন নং" : "Semen Breed/ID"}</label>
+                  <label className="text-xs text-[#64748B] dark:text-slate-400 block mb-1">{language === "bn" ? "ষাঁড়ের জাত / সিমেন নং" : "Semen Breed/ID"}</label>
                   <Input type="text" placeholder="e.g. HF-100" value={breedForm.semenBreed} onChange={(e) => setBreedForm({ ...breedForm, semenBreed: e.target.value })} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-xs text-[#64748B] dark:text-slate-400 block mb-1">{language === "bn" ? "গর্ভধারণের অবস্থা" : "Pregnancy Status"}</label>
-                  <select value={breedForm.status} onChange={(e) => setBreedForm({ ...breedForm, status: e.target.value })} className="w-full bg-white dark:bg-slate-700/50 border border-[#E8E6DE] dark:border-slate-600 rounded-lg px-3 py-2 text-sm text-[#1A1A2E] dark:text-white focus:outline-none">
+                  <select value={breedForm.status} onChange={(e) => setBreedForm({ ...breedForm, status: e.target.value })} className="w-full bg-white dark:bg-slate-700/50 border border-[#E8E6DE] dark:border-slate-600 rounded-lg px-3 py-2 text-sm text-[#1A1A2E] dark:text-white focus:outline-none focus:border-[#F59E0B]">
                     <option value="pending">{language === "bn" ? "ফলাফল পেন্ডিং" : "Pending Check"}</option>
                     <option value="positive">{language === "bn" ? "পজিটিভ (গর্ভবতী)" : "Positive (Pregnant)"}</option>
                     <option value="negative">{language === "bn" ? "নেগেটিভ" : "Negative"}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-[#64748B] dark:text-slate-400 block mb-1">{language === "bn" ? "সম্ভাব্য ডেলিভারি" : "Expected Delivery"}</label>
+                  <label className="text-xs text-[#64748B] dark:text-slate-400 block mb-1">{language === "bn" ? "সম্ভাব্য ডেলিভারি (অটোমেটিক)" : "Expected Delivery"}</label>
                   <Input type="date" value={breedForm.expectedDelivery} onChange={(e) => setBreedForm({ ...breedForm, expectedDelivery: e.target.value })} />
                 </div>
               </div>
-              <div className="flex justify-end pt-1">
+              <div className="flex justify-end pt-2">
                 <Button size="sm" onClick={handleSaveBreed}>💾 {t("save")}</Button>
               </div>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-2 text-xs pt-1">
-              <div className="bg-[#F5F4EF]/50 dark:bg-slate-900/20 p-2 rounded">
+              <div className="bg-[#F5F4EF]/50 dark:bg-slate-900/20 p-2.5 rounded-lg border border-[#E8E6DE] dark:border-slate-700/50">
                 <span className="text-[#64748B]">{language === "bn" ? "সর্বশেষ প্রজনন:" : "Last Bred:"}</span>
-                <p className="font-semibold text-[#1A1A2E] dark:text-slate-300 mt-0.5">{cattle.breedingInfo?.breedingDate || "—"}</p>
+                <p className="font-semibold text-[#1A1A2E] dark:text-slate-300 mt-1">{cattle.breedingInfo?.breedingDate || "—"}</p>
+                {cattle.breedingInfo?.semenBreed && <p className="text-[10px] text-slate-400 mt-0.5">Semen: {cattle.breedingInfo.semenBreed}</p>}
               </div>
-              <div className="bg-[#F5F4EF]/50 dark:bg-slate-900/20 p-2 rounded">
-                <span className="text-[#64748B]">{language === "bn" ? "অবস্থা:" : "Status:"}</span>
-                <p className="mt-0.5"><span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${cattle.breedingInfo?.status === "positive" ? "bg-emerald-100 text-emerald-700" : cattle.breedingInfo?.status === "negative" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>{cattle.breedingInfo?.status === "positive" ? (language === "bn" ? "কনফার্মড গর্ভবতী" : "Pregnant") : cattle.breedingInfo?.status === "negative" ? "নেগেটিভ" : (language === "bn" ? "চেকআপ বাকি" : "Pending Check")}</span></p>
+              <div className="bg-[#F5F4EF]/50 dark:bg-slate-900/20 p-2.5 rounded-lg border border-[#E8E6DE] dark:border-slate-700/50">
+                <span className="text-[#64748B] block mb-1">{language === "bn" ? "অবস্থা:" : "Status:"}</span>
+                <span className={`inline-block px-2.5 py-1 rounded text-[10px] font-bold tracking-wide ${cattle.breedingInfo?.status === "positive" ? "bg-emerald-100 text-emerald-700" : cattle.breedingInfo?.status === "negative" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>
+                  {cattle.breedingInfo?.status === "positive" ? (language === "bn" ? "✅ কনফার্মড গর্ভবতী" : "✅ Pregnant") : cattle.breedingInfo?.status === "negative" ? "❌ নেগেটিভ" : (language === "bn" ? "⏳ চেকআপ বাকি" : "⏳ Pending Check")}
+                </span>
               </div>
+              
+              {/* ── নতুন অ্যাডভান্সড প্রেগন্যান্সি প্রোগ্রেস কার্ড ── */}
               {cattle.breedingInfo?.status === "positive" && (
-                <div className="col-span-2 bg-purple-50/60 dark:bg-purple-500/5 p-3 rounded-lg border border-purple-100 dark:border-purple-500/10 mt-1">
-                  <div className="flex justify-between items-center">
+                <div className="col-span-2 bg-gradient-to-br from-purple-50 to-fuchsia-50 dark:from-purple-900/20 dark:to-fuchsia-900/10 p-4 rounded-xl border border-purple-100 dark:border-purple-500/20 mt-2 shadow-[inset_0_0_15px_rgba(168,85,247,0.05)]">
+                  <div className="flex justify-between items-end mb-4">
                     <div>
-                      <p className="text-[#64748B]">{language === "bn" ? "সম্ভাব্য বাছুর দেওয়ার তারিখ:" : "Expected Delivery Date:"}</p>
-                      <p className="font-bold text-purple-700 dark:text-purple-400 text-sm mt-0.5">{cattle.breedingInfo.expectedDelivery}</p>
+                      <p className="text-purple-600/80 dark:text-purple-400/80 text-[10px] font-bold uppercase tracking-widest mb-1">
+                        {language === "bn" ? "সম্ভাব্য ডেলিভারি (EDD)" : "Expected Delivery (EDD)"}
+                      </p>
+                      <p className="font-extrabold text-purple-700 dark:text-purple-300 text-xl leading-none">
+                        {cattle.breedingInfo.expectedDelivery}
+                      </p>
                     </div>
                     <div className="text-right">
-                      <span className={`text-xs font-bold px-2 py-1 rounded bg-white dark:bg-slate-800 border ${daysLeft <= 15 ? "text-red-500 border-red-200 animate-pulse" : "text-purple-600 border-purple-200"}`}>
-                        {daysLeft <= 0 ? (language === "bn" ? "যেকোনো সময় ডেলিভারি !" : "Delivery Due !") : `${daysLeft} ${language === "bn" ? "দিন বাকি" : "days left"}`}
+                      <span className={`text-xs font-bold px-3 py-1.5 rounded-md shadow-sm ${daysLeft <= 15 ? "bg-red-500 text-white animate-pulse shadow-red-500/30" : "bg-white dark:bg-slate-800 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-500/30"}`}>
+                        {daysLeft <= 0 ? (language === "bn" ? "যেকোনো সময় ডেলিভারি!" : "Delivery Due!") : `${daysLeft} ${language === "bn" ? "দিন বাকি" : "days left"}`}
                       </span>
+                    </div>
+                  </div>
+
+                  {/* প্রোগ্রেস বার */}
+                  <div className="relative pt-1">
+                    <div className="flex justify-between text-[10px] font-bold text-purple-600/80 dark:text-purple-400/80 mb-1.5">
+                      <span>{language === "bn" ? "গর্ভধারণ:" : "Pregnant:"} {daysPregnant} {language === "bn" ? "দিন" : "days"}</span>
+                      <span>{progressPercentage.toFixed(0)}%</span>
+                    </div>
+                    <div className="w-full bg-purple-200/50 dark:bg-purple-900/40 rounded-full h-3 overflow-hidden border border-purple-100 dark:border-purple-800/50">
+                      <div 
+                        className="bg-gradient-to-r from-purple-500 to-fuchsia-500 h-full rounded-full transition-all duration-1000 ease-out relative overflow-hidden" 
+                        style={{ width: `${progressPercentage}%` }}
+                      >
+                        {/* Shimmer effect inside the bar */}
+                        <div className="absolute inset-0 bg-white/20 w-full h-full animate-[shimmer_2s_infinite]" style={{ backgroundImage: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)', transform: 'skewX(-20deg)' }}></div>
+                      </div>
+                    </div>
+                    <div className="flex justify-between text-[9px] text-purple-500/70 dark:text-purple-400/60 mt-1.5 font-bold tracking-wide uppercase">
+                      <span>{language === "bn" ? "১ম দিন" : "Day 1"}</span>
+                      <span>{language === "bn" ? "২৮৩ দিন (ফুল টার্ম)" : "283 Days (Full Term)"}</span>
                     </div>
                   </div>
                 </div>
@@ -278,7 +322,7 @@ export default function CattleProfile({ cattle, onEdit }) {
         ) : (
           <div className="space-y-2">
             {cattle.vaccineHistory.map((v, i) => {
-              const daysLeft = Math.ceil((new Date(v.nextDue) - new Date()) / (1000 * 60 * 60 * 24));
+              const daysLeftVac = Math.ceil((new Date(v.nextDue) - new Date()) / (1000 * 60 * 60 * 24));
               return (
                 <div key={i} className="flex items-center justify-between bg-[#FFFFFF] dark:bg-slate-700/20 rounded-lg px-3 py-2.5 border border-[#E8E6DE] dark:border-slate-700/30 hover:border-[#94A3B8] group shadow-sm">
                   <div>
@@ -288,8 +332,8 @@ export default function CattleProfile({ cattle, onEdit }) {
                   <div className="flex items-center gap-3">
                     <div className="text-right">
                       <p className="text-[#94A3B8] text-xs">পরবর্তী: {v.nextDue}</p>
-                      <span className={`text-xs font-semibold ${daysLeft <= 7 ? "text-[#EF4444]" : daysLeft <= 30 ? "text-[#F59E0B]" : "text-[#10B981]"}`}>
-                        {daysLeft <= 0 ? "মেয়াদ শেষ !" : `${daysLeft} দিন বাকি`}
+                      <span className={`text-xs font-semibold ${daysLeftVac <= 7 ? "text-[#EF4444]" : daysLeftVac <= 30 ? "text-[#F59E0B]" : "text-[#10B981]"}`}>
+                        {daysLeftVac <= 0 ? "মেয়াদ শেষ !" : `${daysLeftVac} দিন বাকি`}
                       </span>
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
