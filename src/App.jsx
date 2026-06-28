@@ -94,17 +94,18 @@ function PublicCattleView({ scanId }) {
             </div>
             
             {/* ── বর্তমান ওজন সেকশন (Fixed Object Issue) ── */}
-            <div className="bg-slate-900/60 p-4 rounded-2xl border border-amber-500/30 col-span-2 flex justify-between items-center shadow-[inset_0_0_15px_rgba(245,158,11,0.05)]">
-              <div>
-                <p className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">বর্তমান ওজন (Current Weight)</p>
-                <p className="text-amber-400 font-bold text-lg">
-                  {c.weight 
-                    ? `${typeof c.weight === 'object' ? (c.weight.value || c.weight.current || c.weight.weight || 'N/A') : c.weight} কেজি` 
-                    : "N/A"}
-                </p>
-              </div>
-              <div className="text-3xl opacity-90">⚖️</div>
-            </div>
+          {/* ── বর্তমান ওজন সেকশন (Ultimate Regex Fix) ── */}
+<div className="bg-slate-900/60 p-4 rounded-2xl border border-amber-500/30 col-span-2 flex justify-between items-center shadow-[inset_0_0_15px_rgba(245,158,11,0.05)]">
+  <div>
+    <p className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">বর্তমান ওজন (Current Weight)</p>
+    <p className="text-amber-400 font-bold text-lg">
+      {c.weight 
+        ? `${typeof c.weight === 'object' ? (JSON.stringify(c.weight).match(/\d+(\.\d+)?/)?.[0] || 'N/A') : c.weight} কেজি` 
+        : "N/A"}
+    </p>
+  </div>
+  <div className="text-3xl opacity-90">⚖️</div>
+</div>
           </div>
 
           <button onClick={() => window.location.href='/'} className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl border border-slate-700 transition-all text-xs font-bold uppercase tracking-widest">
