@@ -15,6 +15,7 @@ import AddCattleForm from "./components/cattle/AddCattleForm";
 import FeedInventory from "./components/inventory/FeedInventory";
 import PWAInstallBanner from "./components/ui/PWAInstallBanner";
 
+
 // ── নতুন ফিচার: পাবলিক ডিজিটাল আইডি কার্ড (বর্তমান ওজন সহ) ──
 function PublicCattleView({ scanId }) {
   const { cattle } = useApp();
@@ -37,12 +38,26 @@ function PublicCattleView({ scanId }) {
       <div className="min-h-screen bg-[#080c18] flex flex-col items-center justify-center p-4 text-center">
         <div className="text-6xl mb-4">🚫</div>
         <h2 className="text-xl text-white font-bold mb-2">গরুটি খুঁজে পাওয়া যায়নি</h2>
-        <p className="text-slate-400 mb-6 text-sm">এই কিউআর কোডের কোনো তথ্য ডাটাবেজে নেই。</p>
+        <p className="text-slate-400 mb-6 text-sm">এই কিউআর কোডের কোনো তথ্য ডাটাবেজে নেই।</p>
         <button onClick={() => window.location.href='/'} className="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold rounded-xl transition-all">
           লগিন পেজে যান
         </button>
       </div>
     );
+  }
+
+  // ── স্মার্ট ওজন এক্সট্র্যাক্টর (বাগ ফিক্স) ──
+  let currentWeight = "N/A";
+  if (c && c.weight) {
+    if (Array.isArray(c.weight) && c.weight.length > 0) {
+      // যদি ওজনটি হিস্ট্রি আকারে থাকে (একাধিক আপডেট), তবে সবার শেষেরটি নেবে
+      const lastRecord = c.weight[c.weight.length - 1];
+      currentWeight = lastRecord.weight || lastRecord.value || lastRecord.kg || "N/A";
+    } else if (typeof c.weight === 'object' && !Array.isArray(c.weight)) {
+      currentWeight = c.weight.current || c.weight.value || c.weight.weight || "N/A";
+    } else {
+      currentWeight = c.weight;
+    }
   }
 
   return (
@@ -93,19 +108,16 @@ function PublicCattleView({ scanId }) {
               </p>
             </div>
             
-            {/* ── বর্তমান ওজন সেকশন (Fixed Object Issue) ── */}
-          {/* ── বর্তমান ওজন সেকশন (Ultimate Regex Fix) ── */}
-<div className="bg-slate-900/60 p-4 rounded-2xl border border-amber-500/30 col-span-2 flex justify-between items-center shadow-[inset_0_0_15px_rgba(245,158,11,0.05)]">
-  <div>
-    <p className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">বর্তমান ওজন (Current Weight)</p>
-    <p className="text-amber-400 font-bold text-lg">
-      {c.weight 
-        ? `${typeof c.weight === 'object' ? (JSON.stringify(c.weight).match(/\d+(\.\d+)?/)?.[0] || 'N/A') : c.weight} কেজি` 
-        : "N/A"}
-    </p>
-  </div>
-  <div className="text-3xl opacity-90">⚖️</div>
-</div>
+            {/* ── বর্তমান ওজন সেকশন (Finally Fixed) ── */}
+            <div className="bg-slate-900/60 p-4 rounded-2xl border border-amber-500/30 col-span-2 flex justify-between items-center shadow-[inset_0_0_15px_rgba(245,158,11,0.05)]">
+              <div>
+                <p className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">বর্তমান ওজন (Current Weight)</p>
+                <p className="text-amber-400 font-bold text-lg">
+                  {currentWeight !== "N/A" ? `${currentWeight} কেজি` : "N/A"}
+                </p>
+              </div>
+              <div className="text-3xl opacity-90">⚖️</div>
+            </div>
           </div>
 
           <button onClick={() => window.location.href='/'} className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl border border-slate-700 transition-all text-xs font-bold uppercase tracking-widest">
