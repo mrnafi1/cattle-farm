@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { AppProvider } from "./contexts/AppContext";
+import { AppProvider, useApp } from "./contexts/AppContext"; // useApp ইমপোর্ট করা হয়েছে
 import { LanguageProvider, useLanguage } from "./contexts/LanguageContext";
 import MainLayout from "./components/layout/MainLayout";
 import Dashboard from "./components/dashboard/Dashboard";
@@ -16,11 +15,97 @@ import AddCattleForm from "./components/cattle/AddCattleForm";
 import FeedInventory from "./components/inventory/FeedInventory";
 import PWAInstallBanner from "./components/ui/PWAInstallBanner";
 
+// ── নতুন ফিচার: পাবলিক ডিজিটাল আইডি কার্ড (লগিন ছাড়া স্ক্যান ভিউ) ──
+function PublicCattleView({ scanId }) {
+  const { cattle } = useApp();
+  const { language } = useLanguage();
+
+  if (!cattle || cattle.length === 0) {
+    return (
+      <div className="min-h-screen bg-[#080c18] flex flex-col items-center justify-center p-4">
+        <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p className="text-slate-400 text-sm animate-pulse">খামারের তথ্য লোড হচ্ছে...</p>
+      </div>
+    );
+  }
+
+  const c = cattle.find(cat => cat._id === scanId || cat.id === scanId || cat.tagId === scanId);
+
+  if (!c) {
+    return (
+      <div className="min-h-screen bg-[#080c18] flex flex-col items-center justify-center p-4 text-center">
+        <div className="text-6xl mb-4">🚫</div>
+        <h2 className="text-xl text-white font-bold mb-2">গরুটি খুঁজে পাওয়া যায়নি</h2>
+        <p className="text-slate-400 mb-6 text-sm">এই কিউআর কোডের কোনো তথ্য ডাটাবেজে নেই।</p>
+        <button onClick={() => window.location.href='/'} className="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold rounded-xl transition-all">
+          লগিন পেজে যান
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#080c18] p-4 flex flex-col items-center justify-center relative overflow-hidden">
+      {/* Background Glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[300px] h-[300px] bg-amber-500/20 rounded-full blur-[100px] pointer-events-none" />
+
+      <div className="w-full max-w-sm bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 rounded-3xl overflow-hidden shadow-2xl z-10 animate-fade-in">
+        {/* Cover & Profile Image */}
+        <div className="h-32 bg-gradient-to-r from-amber-500 to-amber-700 relative">
+          <div className="absolute top-4 left-4 bg-black/30 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
+            <p className="text-white text-xs font-bold tracking-widest uppercase">Smart Tag</p>
+          </div>
+          <div className="absolute -bottom-14 left-1/2 -translate-x-1/2 w-28 h-28 bg-slate-900 p-1.5 rounded-full border-4 border-slate-800 shadow-xl">
+            <img 
+              src={c.photo || "https://cdn-icons-png.flaticon.com/512/1998/1998610.png"} 
+              alt={c.name} 
+              className="w-full h-full object-cover rounded-full bg-white" 
+            />
+          </div>
+        </div>
+
+        {/* Details Section */}
+        <div className="pt-16 pb-6 px-6 text-center">
+          <h2 className="text-2xl font-extrabold text-white mb-1">{c.name || "নামহীন গরু"}</h2>
+          <div className="inline-block bg-amber-500/10 border border-amber-500/30 px-4 py-1 rounded-full mb-6">
+            <p className="text-amber-400 font-mono font-bold text-sm">TAG ID: {c.tagId}</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 text-left mb-8">
+            <div className="bg-slate-900/60 p-3.5 rounded-2xl border border-slate-700/50">
+              <p className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">জাত (Breed)</p>
+              <p className="text-white font-semibold text-sm">{c.breed || "N/A"}</p>
+            </div>
+            <div className="bg-slate-900/60 p-3.5 rounded-2xl border border-slate-700/50">
+              <p className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">বয়স (Age)</p>
+              <p className="text-white font-semibold text-sm">{c.age ? `${c.age} বছর` : "N/A"}</p>
+            </div>
+            <div className="bg-slate-900/60 p-3.5 rounded-2xl border border-slate-700/50">
+              <p className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">ধরন (Type)</p>
+              <p className="text-white font-semibold text-sm capitalize">{c.type === "dairy" ? "দুগ্ধবতী (Dairy)" : "মোটাতাজাকরণ (Fattening)"}</p>
+            </div>
+            <div className="bg-slate-900/60 p-3.5 rounded-2xl border border-slate-700/50">
+              <p className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">অবস্থা (Status)</p>
+              <p className="text-white font-semibold text-sm capitalize flex items-center gap-1.5">
+                <span className={`w-2.5 h-2.5 rounded-full ${c.status === 'healthy' ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : c.status === 'sick' ? 'bg-red-500 shadow-[0_0_8px_#ef4444]' : 'bg-amber-500 shadow-[0_0_8px_#f59e0b]'}`}></span>
+                {c.status === "healthy" ? "সুস্থ" : c.status === "sick" ? "অসুস্থ" : "বিক্রির জন্য"}
+              </p>
+            </div>
+          </div>
+
+          <button onClick={() => window.location.href='/'} className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl border border-slate-700 transition-all text-xs font-bold uppercase tracking-widest">
+            🔒 Admin / Staff Login
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Login Screen ─────────────────────────────────────────────────
 function LoginScreen() {
   const { login, authError } = useAuth();
   const { t, language, toggleLanguage } = useLanguage();
-
   const [loginType, setLoginType] = useState("admin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,55 +114,25 @@ function LoginScreen() {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (loginType === "admin") {
-      login({ email, password }, "admin");
-    } else {
-      login({ phone, pin }, "staff");
-    }
+    if (loginType === "admin") login({ email, password }, "admin");
+    else login({ phone, pin }, "staff");
   };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#080c18] p-4 relative overflow-hidden">
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-amber-500/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-sky-500/10 rounded-full blur-[100px] pointer-events-none" />
-
       <div className="relative w-full max-w-md bg-slate-800/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 shadow-2xl z-10">
-        
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-3xl mx-auto mb-4 shadow-2xl shadow-amber-500/25">
-            🐄
-          </div>
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-3xl mx-auto mb-4 shadow-2xl shadow-amber-500/25">🐄</div>
           <h2 className="text-2xl font-bold text-white mb-1">{t("appName")}</h2>
           <p className="text-sm text-slate-400">{t("appSubtitle")}</p>
         </div>
-
         <div className="flex bg-slate-900/50 p-1 rounded-lg mb-6 border border-slate-700/50">
-          <button
-            type="button"
-            onClick={() => setLoginType("admin")}
-            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all duration-300 ${
-              loginType === "admin" ? "bg-amber-500 text-slate-900 shadow-lg" : "text-slate-400 hover:text-white"
-            }`}
-          >
-            {language === "bn" ? "অ্যাডমিন" : "Admin"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setLoginType("staff")}
-            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all duration-300 ${
-              loginType === "staff" ? "bg-sky-500 text-white shadow-lg" : "text-slate-400 hover:text-white"
-            }`}
-          >
-            {language === "bn" ? "কর্মী / শেয়ারহোল্ডার" : "Staff / Shareholder"}
-          </button>
+          <button type="button" onClick={() => setLoginType("admin")} className={`flex-1 py-2 text-sm font-medium rounded-md transition-all duration-300 ${loginType === "admin" ? "bg-amber-500 text-slate-900 shadow-lg" : "text-slate-400 hover:text-white"}`}>{language === "bn" ? "অ্যাডমিন" : "Admin"}</button>
+          <button type="button" onClick={() => setLoginType("staff")} className={`flex-1 py-2 text-sm font-medium rounded-md transition-all duration-300 ${loginType === "staff" ? "bg-sky-500 text-white shadow-lg" : "text-slate-400 hover:text-white"}`}>{language === "bn" ? "কর্মী / শেয়ারহোল্ডার" : "Staff / Shareholder"}</button>
         </div>
-
-        {authError && (
-          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-center text-red-400 text-sm animate-pulse">
-            ⚠ {authError}
-          </div>
-        )}
-
+        {authError && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-center text-red-400 text-sm animate-pulse">⚠ {authError}</div>}
         <form onSubmit={handleLogin} className="space-y-5">
           {loginType === "admin" ? (
             <div className="space-y-4 animate-fade-in">
@@ -102,13 +157,11 @@ function LoginScreen() {
               </div>
             </div>
           )}
-
           <button type="submit" className={`w-full py-3 rounded-xl font-bold transition-all duration-300 transform active:scale-[0.98] shadow-lg ${loginType === "admin" ? "bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 hover:from-amber-300 hover:to-amber-400 shadow-amber-500/20" : "bg-gradient-to-r from-sky-500 to-sky-600 text-white hover:from-sky-400 hover:to-sky-500 shadow-sky-500/20"}`}>
             {language === "bn" ? "প্রবেশ করুন →" : "Login →"}
           </button>
         </form>
       </div>
-
       <div className="text-center mt-6 z-10">
         <button onClick={toggleLanguage} className="text-slate-500 text-xs hover:text-slate-300 transition-colors">
           {language === "bn" ? "Switch to English" : "বাংলায় পরিবর্তন করুন"}
@@ -123,31 +176,39 @@ function AppShell() {
   const { currentUser, hasAccess } = useAuth();
   const { language } = useLanguage();
   
-  // ১. LocalStorage বা URL থেকে পেজ মনে রাখা (QR Code এর জন্য আপডেট করা লজিক)
-  const [activePage, setActivePage] = useState(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("viewCattle")) return "cattle"; // যদি স্ক্যান করে আসে, তাহলে গরুর লিস্ট পেজে যাবে
+  const params = new URLSearchParams(window.location.search);
+  const scanId = params.get("viewCattle");
 
+  const [activePage, setActivePage] = useState(() => {
+    if (scanId && currentUser) return "cattle"; // লগিন করা থাকলে সরাসরি গরুর লিস্টে যাবে
     return localStorage.getItem("cattleFarmActivePage") || "dashboard";
   });
 
-  // ২. রিলোড ও Pull-to-refresh বন্ধ করা
+  useEffect(() => {
+    // লগিন করা অবস্থায় কেউ স্ক্যান করলে তাকে লিস্টে নিয়ে ওই গরুটি হাইলাইট করে দেওয়া হবে
+    if (scanId && currentUser) {
+      sessionStorage.setItem("searchHighlightId", scanId);
+      window.history.replaceState({}, document.title, "/"); 
+    }
+  }, [scanId, currentUser]);
+
   useEffect(() => {
     localStorage.setItem("cattleFarmActivePage", activePage);
     document.body.style.overscrollBehaviorY = 'none';
-    
-    return () => {
-      document.body.style.overscrollBehaviorY = 'auto';
-    };
+    return () => { document.body.style.overscrollBehaviorY = 'auto'; };
   }, [activePage]);
 
   const [showAddCattle, setShowAddCattle] = useState(false);
   const [showAddMilk,   setShowAddMilk]   = useState(false);
   const [showAddExp,    setShowAddExp]    = useState(false);
 
+  // ── স্মার্ট লজিক: লগিন করা না থাকলে এবং কিউআর স্ক্যান করলে পাব্লিক কার্ড দেখাবে ──
+  if (scanId && !currentUser) {
+    return <PublicCattleView scanId={scanId} />;
+  }
+
   if (!currentUser) return <LoginScreen />;
 
-  // পেজ রাউটিং
   const pages = {
     dashboard:  <Dashboard />,
     cattle:     <CattleList />,
@@ -177,7 +238,6 @@ function AppShell() {
         <AddCattleForm onClose={() => setShowAddCattle(false)} />
       </Modal>
 
-      {/* PWA ইন্সটলেশন প্রম্পট ব্যানার */}
       <PWAInstallBanner />
     </MainLayout>
   );
