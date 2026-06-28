@@ -151,7 +151,7 @@ function LoginScreen() {
       <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-sky-500/10 rounded-full blur-[100px] pointer-events-none" />
       <div className="relative w-full max-w-md bg-slate-800/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 shadow-2xl z-10">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-3xl mx-auto mb-4 shadow-2xl shadow-amber-500/25">🐄</div>
+     <img src="/logo.png" alt="Baqarah Agro Logo" className="w-24 h-24 mx-auto mb-4 object-contain drop-shadow-xl" />   
           <h2 className="text-2xl font-bold text-white mb-1">{t("appName")}</h2>
           <p className="text-sm text-slate-400">{t("appSubtitle")}</p>
         </div>
