@@ -10,17 +10,27 @@ export function AppProvider({ children }) {
   const [sales,     setSales]     = useState([]);
   const [inventory, setInventory] = useState([]);
   const [feedLogs,  setFeedLogs]  = useState([]);
-  const [funds,     setFunds]     = useState([]); // ── নতুন: ফান্ডের স্টেট ──
+  
+  // ── 💡 ফিক্স: ফান্ডের ডেটা ব্রাউজারের লোকাল স্টোরেজ থেকে আনা ──
+  const [funds, setFunds] = useState(() => {
+    const localFunds = localStorage.getItem("cattle_funds");
+    return localFunds ? JSON.parse(localFunds) : [];
+  });
   
   const [isOnline, setIsOnline] = useState(() => navigator.onLine);
   const [toasts,   setToasts]   = useState([]);
 
+  // ── 💡 ফিক্স: ফান্ডের স্টেট পরিবর্তন হলেই লোকাল স্টোরেজে সেভ হবে ──
+  useEffect(() => {
+    localStorage.setItem("cattle_funds", JSON.stringify(funds));
+  }, [funds]);
+
   const fetchAllData = async () => {
     try {
-      // ── নতুন: 'funds' URL যুক্ত করা হলো ──
-      const urls = ["cattles", "milk_logs", "expenses", "incomes", "sales", "inventory", "feed_logs", "funds"];
-      const [catRes, milkRes, expRes, incRes, saleRes, invRes, feedRes, fundRes] = await Promise.all(
-        urls.map(url => fetch(`https://cattle-farm-server.onrender.com/${url}`).catch(() => ({ json: () => [] }))) // Fallback added
+      // ব্যাকএন্ড থেকে অন্যান্য ডেটা আনছি (funds বাদে)
+      const urls = ["cattles", "milk_logs", "expenses", "incomes", "sales", "inventory", "feed_logs"];
+      const [catRes, milkRes, expRes, incRes, saleRes, invRes, feedRes] = await Promise.all(
+        urls.map(url => fetch(`https://cattle-farm-server.onrender.com/${url}`).catch(() => ({ json: () => [] })))
       );
 
       setCattle(await catRes.json());
@@ -30,15 +40,6 @@ export function AppProvider({ children }) {
       setSales(await saleRes.json());
       setInventory(await invRes.json());
       setFeedLogs(await feedRes.json());
-      
-      // ── নতুন: ফান্ড ফেচিং (Error handle সহ) ──
-      try {
-        const fundsData = await fundRes.json();
-        setFunds(Array.isArray(fundsData) ? fundsData : []);
-      } catch (e) {
-        setFunds([]);
-      }
-
     } catch (error) { console.error("ডাটা আনতে সমস্যা:", error); }
   };
 
@@ -69,37 +70,24 @@ export function AppProvider({ children }) {
   }, []);
   const removeToast = useCallback((id) => setToasts((p) => p.filter((t) => t.id !== id)), []);
 
-  // ── Shareholder Funds CRUD (নতুন যুক্ত করা হলো) ──
+  // ── 💡 ফিক্স: Shareholder Funds Local Storage CRUD ──
   const addFund = async (data) => {
     try {
-      const res = await fetch("https://cattle-farm-server.onrender.com/funds", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      const newFund = await res.json();
-      setFunds((p) => [{ ...data, _id: newFund.insertedId }, ...p]);
-      addToast("ফান্ড সংরক্ষিত হয়েছে ✓");
+      const newFund = { ...data, _id: Date.now().toString() }; // ডামি আইডি তৈরি
+      setFunds((p) => [newFund, ...p]);
+      addToast("ফান্ড সফলভাবে সংরক্ষিত হয়েছে ✓");
     } catch (error) { addToast("ফান্ড সেভ করতে সমস্যা হয়েছে", "error"); }
   };
 
   const updateFund = async (id, data) => {
     try {
-      const res = await fetch(`https://cattle-farm-server.onrender.com/funds/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (res.ok) {
-        setFunds((p) => p.map((f) => (f._id === id || f.id === id) ? { ...f, ...data } : f));
-        addToast("ফান্ড আপডেট হয়েছে ✓");
-      }
+      setFunds((p) => p.map((f) => (f._id === id || f.id === id) ? { ...f, ...data } : f));
+      addToast("ফান্ড আপডেট হয়েছে ✓");
     } catch (error) { addToast("আপডেট করা সম্ভব হয়নি", "error"); }
   };
 
   const deleteFund = async (id) => {
     try {
-      await fetch(`https://cattle-farm-server.onrender.com/funds/${id}`, { method: "DELETE" });
       setFunds((prev) => prev.filter((f) => f._id !== id && f.id !== id));
       addToast("ফান্ডের রেকর্ড মুছে ফেলা হয়েছে", "error");
     } catch (error) { addToast("মুছে ফেলতে সমস্যা হয়েছে", "error"); }
@@ -458,12 +446,12 @@ export function AppProvider({ children }) {
 
   return (
     <AppContext.Provider value={{
-      cattle, milkLogs, expenses, incomes, sales, inventory, feedLogs, funds, // ── funds যোগ করা হলো
+      cattle, milkLogs, expenses, incomes, sales, inventory, feedLogs, funds,
       addCattle, updateCattle, deleteCattle, fetchRealCattleData, fetchAllData,
       addMilkLog, updateMilkLog, deleteMilkLog,
       addExpense, updateExpense, deleteExpense,
       addIncome, updateIncome, deleteIncome,
-      addFund, updateFund, deleteFund, // ── নতুন ফাংশনগুলো যোগ করা হলো
+      addFund, updateFund, deleteFund,
       sellCattle, markCattleDead,
       addInventoryStock, addFeedLog, updateInventoryStock, deleteInventoryStock, updateFeedLog, deleteFeedLog,
       stats, toasts, addToast, removeToast, isOnline,
