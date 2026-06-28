@@ -20,29 +20,25 @@ export default function CattleProfile({ cattle, onEdit }) {
   const { t, language } = useLanguage();
   const { updateCattle, addToast } = useApp();
 
-  // টিকার স্টেট
   const [showVacForm, setShowVacForm] = useState(false);
   const [editingIdx,  setEditingIdx]  = useState(null);
   const [vacForm,     setVacForm]     = useState(EMPTY_VAC);
   const [deleteIdx,   setDeleteIdx]   = useState(null);
 
-  // প্রজনন ও প্রেগনেন্সি স্টেট
   const [showBreedForm, setShowBreedForm] = useState(false);
   const [breedForm, setBreedForm] = useState({
     breedingDate: cattle.breedingInfo?.breedingDate || "",
     semenBreed: cattle.breedingInfo?.semenBreed || "",
-    status: cattle.breedingInfo?.status || "pending", // pending, positive, negative
+    status: cattle.breedingInfo?.status || "pending",
     expectedDelivery: cattle.breedingInfo?.expectedDelivery || ""
   });
 
   const setV = (k, v) => setVacForm((p) => ({ ...p, [k]: v }));
 
-  // ── অটোমেটেড ক্যালকুলেশন লজিক ──
-  // বীজ দেওয়ার তারিখ ইনপুট দিলে অটোমেটিক বাছুর হওয়ার সম্ভাব্য তারিখ (২৮৩ দিন পর) হিসাব করা
   useEffect(() => {
     if (breedForm.breedingDate && !cattle.breedingInfo?.expectedDelivery) {
       const bDate = new Date(breedForm.breedingDate);
-      bDate.setDate(bDate.getDate() + 283); // গরুর গর্ভধারণকাল সাধারণত ২৮৩ দিন
+      bDate.setDate(bDate.getDate() + 283);
       setBreedForm(p => ({ ...p, expectedDelivery: bDate.toISOString().slice(0, 10) }));
     }
   }, [breedForm.breedingDate]);
@@ -89,12 +85,10 @@ export default function CattleProfile({ cattle, onEdit }) {
     }
   };
 
-  // QR Code URL
   const appUrl = window.location.origin; 
   const profileLink = `${appUrl}/?viewCattle=${cattle._id || cattle.id}`;
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(profileLink)}`;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(profileLink)}`;
   
-  // ── স্মার্ট প্রেগন্যান্সি ট্র্যাকিং ক্যালকুলেশন ──
   let daysPregnant = 0;
   let daysLeft = null;
   let progressPercentage = 0;
@@ -102,48 +96,113 @@ export default function CattleProfile({ cattle, onEdit }) {
   if (cattle.breedingInfo?.status === "positive" && cattle.breedingInfo?.breedingDate) {
     const bDate = new Date(cattle.breedingInfo.breedingDate);
     const today = new Date();
-    
-    // কত দিন গর্ভবতী (Current Date - Breeding Date)
     daysPregnant = Math.max(0, Math.floor((today - bDate) / (1000 * 60 * 60 * 24)));
-    
     if (cattle.breedingInfo.expectedDelivery) {
       const eDate = new Date(cattle.breedingInfo.expectedDelivery);
       daysLeft = Math.ceil((eDate - today) / (1000 * 60 * 60 * 24));
     } else {
       daysLeft = 283 - daysPregnant;
     }
-    
-    // প্রোগ্রেস পার্সেন্টেজ (সর্বোচ্চ ১০০%)
     progressPercentage = Math.min(100, Math.max(0, (daysPregnant / 283) * 100));
   }
 
   return (
     <div className="space-y-5">
+      {/* ── 💡 জাদুকরী Print CSS (শুধুমাত্র ট্যাগ প্রিন্ট করার জন্য) ── */}
+      <style>
+        {`
+          @media print {
+            body * {
+              visibility: hidden;
+            }
+            #qr-print-container, #qr-print-container * {
+              visibility: visible;
+            }
+            #qr-print-container {
+              position: fixed;
+              left: 50%;
+              top: 30px;
+              transform: translateX(-50%);
+              width: 100%;
+              display: flex !important;
+              flex-direction: column !important;
+              align-items: center !important;
+              justify-content: center !important;
+              border: none !important;
+              background: transparent !important;
+              box-shadow: none !important;
+            }
+            #qr-print-container img {
+              width: 220px !important;
+              height: 220px !important;
+              margin-bottom: 20px !important;
+              border: 4px solid #000 !important;
+              border-radius: 12px !important;
+              padding: 10px !important;
+              background: #fff !important;
+            }
+            .no-print {
+              display: none !important;
+            }
+            .print-only {
+              display: block !important;
+              text-align: center !important;
+            }
+            .print-only h2 {
+              font-size: 32px !important;
+              font-weight: 900 !important;
+              color: #000 !important;
+              margin: 0 0 5px 0 !important;
+              letter-spacing: 2px !important;
+            }
+            .print-only p {
+              font-size: 24px !important;
+              font-weight: bold !important;
+              color: #333 !important;
+              margin: 0 !important;
+            }
+          }
+        `}
+      </style>
+
       {/* ── ১. স্মার্ট ট্যাগিং (QR Code Card) ── */}
-      <div className="bg-[#FAFAF7] dark:bg-slate-900/60 p-4 rounded-xl border border-[#E8E6DE] dark:border-slate-700/50 flex flex-col sm:flex-row items-center gap-4 transition-colors">
+      <div id="qr-print-container" className="bg-[#FAFAF7] dark:bg-slate-900/60 p-4 rounded-xl border border-[#E8E6DE] dark:border-slate-700/50 flex flex-col sm:flex-row items-center gap-4 transition-colors">
+        
+        {/* QR Code Image (Both screen and print) */}
         <div className="bg-white p-2 rounded-lg border border-[#E8E6DE] shadow-sm flex-shrink-0">
           <img src={qrCodeUrl} alt="Cattle QR Tag" className="w-28 h-28" />
         </div>
-        <div className="text-center sm:text-left space-y-1.5 flex-1">
+        
+        {/* ── On Screen UI (Hides during print) ── */}
+        <div className="text-center sm:text-left space-y-1.5 flex-1 no-print">
           <h4 className="text-sm font-bold text-[#1A1A2E] dark:text-white">{language === "bn" ? "ডিজিটাল স্মার্ট ট্যাগ (QR Code)" : "Digital Smart Tag"}</h4>
-          <p className="text-xs text-[#64748B] dark:text-slate-400">
-            {language === "bn" ? "এই কিউআর কোডটি প্রিন্ট করে গরুর গলার ট্যাগে ব্যবহার করতে পারবেন। যেকোনো মোবাইল দিয়ে স্ক্যান করলেই এই প্রোফাইলটি দেখা যাবে।" : "Print this QR code for the cattle collar tag to quickly access profile data."}
+          <p className="text-xs text-[#64748B] dark:text-slate-400 mb-2">
+            {language === "bn" ? "এই কিউআর কোডটি প্রিন্ট করে গরুর গলার ট্যাগে ব্যবহার করতে পারবেন। যেকোনো মোবাইল দিয়ে স্ক্যান করলেই প্রোফাইল দেখা যাবে।" : "Print this QR code for the cattle collar tag."}
           </p>
-          <button onClick={() => window.print()} className="text-xs font-semibold px-2.5 py-1 bg-white dark:bg-slate-800 border border-[#E8E6DE] dark:border-slate-600 rounded-md text-[#1A1A2E] dark:text-slate-200 hover:bg-[#F5F4EF] transition-all">
+          <button onClick={() => window.print()} className="text-xs font-semibold px-3 py-1.5 bg-white dark:bg-slate-800 border border-[#E8E6DE] dark:border-slate-600 rounded-md text-[#1A1A2E] dark:text-slate-200 hover:bg-[#F5F4EF] transition-all shadow-sm">
             🖨️ {language === "bn" ? "ট্যাগ প্রিন্ট করুন" : "Print Tag"}
           </button>
         </div>
+
+        {/* ── Print Only Info (Shows ONLY during print) ── */}
+        <div className="hidden print-only">
+           <h2>BAQARAH AGRO</h2>
+           <p>TAG ID: {cattle.tagId}</p>
+        </div>
+
       </div>
 
       {/* ছবি */}
-      {cattle.photo && (
-        <div className="w-full h-44 rounded-xl overflow-hidden border border-[#E8E6DE] dark:border-slate-700/40">
-          <img src={cattle.photo} alt={cattle.name} className="w-full h-full object-cover" />
-        </div>
-      )}
+      <div className="no-print">
+        {cattle.photo && (
+          <div className="w-full h-44 rounded-xl overflow-hidden border border-[#E8E6DE] dark:border-slate-700/40 mb-5">
+            <img src={cattle.photo} alt={cattle.name} className="w-full h-full object-cover" />
+          </div>
+        )}
+      </div>
 
       {/* মূল তথ্য */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 no-print">
         {[
           { label: t("tagId"),         value: cattle.tagId },
           { label: t("breed"),         value: cattle.breed },
@@ -160,14 +219,14 @@ export default function CattleProfile({ cattle, onEdit }) {
       </div>
 
       {/* অবস্থা */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 no-print">
         <span className="text-[#64748B] dark:text-slate-400 text-sm">{t("status")}:</span>
         <Badge status={cattle.status} label={cattle.status === "healthy" ? t("healthy") : cattle.status === "sick" ? t("sick") : t("forSale")} />
       </div>
 
       {/* ── ২. প্রজনন ও প্রেগনেন্সি ট্র্যাকার সেকশন ── */}
       {cattle.type === "dairy" && (
-        <div className="bg-[#FFFFFF] dark:bg-slate-800/30 border border-[#E8E6DE] dark:border-slate-700/40 rounded-xl p-4 shadow-sm">
+        <div className="bg-[#FFFFFF] dark:bg-slate-800/30 border border-[#E8E6DE] dark:border-slate-700/40 rounded-xl p-4 shadow-sm no-print">
           <div className="flex items-center justify-between mb-3">
             <p className="text-[#1A1A2E] dark:text-white font-semibold text-sm">🤰 {language === "bn" ? "প্রজনন ও গর্ভধারণ রেকর্ড" : "Breeding & Pregnancy"}</p>
             <button onClick={() => setShowBreedForm(!showBreedForm)} className="text-xs px-2.5 py-1.5 bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-500/20 rounded-lg font-medium transition-colors hover:bg-purple-100">
@@ -219,7 +278,6 @@ export default function CattleProfile({ cattle, onEdit }) {
                 </span>
               </div>
               
-              {/* ── নতুন অ্যাডভান্সড প্রেগন্যান্সি প্রোগ্রেস কার্ড ── */}
               {cattle.breedingInfo?.status === "positive" && (
                 <div className="col-span-2 bg-gradient-to-br from-purple-50 to-fuchsia-50 dark:from-purple-900/20 dark:to-fuchsia-900/10 p-4 rounded-xl border border-purple-100 dark:border-purple-500/20 mt-2 shadow-[inset_0_0_15px_rgba(168,85,247,0.05)]">
                   <div className="flex justify-between items-end mb-4">
@@ -238,7 +296,6 @@ export default function CattleProfile({ cattle, onEdit }) {
                     </div>
                   </div>
 
-                  {/* প্রোগ্রেস বার */}
                   <div className="relative pt-1">
                     <div className="flex justify-between text-[10px] font-bold text-purple-600/80 dark:text-purple-400/80 mb-1.5">
                       <span>{language === "bn" ? "গর্ভধারণ:" : "Pregnant:"} {daysPregnant} {language === "bn" ? "দিন" : "days"}</span>
@@ -249,7 +306,6 @@ export default function CattleProfile({ cattle, onEdit }) {
                         className="bg-gradient-to-r from-purple-500 to-fuchsia-500 h-full rounded-full transition-all duration-1000 ease-out relative overflow-hidden" 
                         style={{ width: `${progressPercentage}%` }}
                       >
-                        {/* Shimmer effect inside the bar */}
                         <div className="absolute inset-0 bg-white/20 w-full h-full animate-[shimmer_2s_infinite]" style={{ backgroundImage: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)', transform: 'skewX(-20deg)' }}></div>
                       </div>
                     </div>
@@ -267,14 +323,14 @@ export default function CattleProfile({ cattle, onEdit }) {
 
       {/* ওজন ট্র্যাকার */}
       {cattle.weight?.length > 0 && (
-        <div className="bg-[#FFFFFF] dark:bg-slate-700/20 border border-[#E8E6DE] dark:border-transparent rounded-xl p-4 shadow-sm">
+        <div className="bg-[#FFFFFF] dark:bg-slate-700/20 border border-[#E8E6DE] dark:border-transparent rounded-xl p-4 shadow-sm no-print">
           <p className="text-[#1A1A2E] dark:text-white font-semibold text-sm mb-3">📊 ওজন ট্র্যাকার</p>
           <WeightTracker cattle={cattle} />
         </div>
       )}
 
       {/* টিকার ইতিহাস */}
-      <div>
+      <div className="no-print">
         <div className="flex items-center justify-between mb-3">
           <p className="text-[#1A1A2E] dark:text-slate-300 text-sm font-semibold">💉 টিকার ইতিহাস</p>
           <button onClick={openAdd} className="text-xs px-3 py-1.5 bg-[#F59E0B]/10 dark:bg-amber-400/10 text-[#F59E0B] dark:text-amber-400 border border-[#F59E0B]/20 dark:border-amber-400/20 rounded-lg hover:bg-[#F59E0B]/15 transition-all">+ নতুন টিকা</button>
@@ -350,17 +406,19 @@ export default function CattleProfile({ cattle, onEdit }) {
 
       {/* নোট */}
       {cattle.notes && (
-        <div className="bg-[#F59E0B]/5 border border-[#F59E0B]/20 rounded-lg px-4 py-3">
+        <div className="bg-[#F59E0B]/5 border border-[#F59E0B]/20 rounded-lg px-4 py-3 no-print">
           <p className="text-[#F59E0B] text-xs font-semibold mb-1">📝 নোট</p>
           <p className="text-[#1A1A2E] dark:text-slate-300 text-sm">{cattle.notes}</p>
         </div>
       )}
 
       {/* ডকুমেন্ট সংরক্ষণ সেকশন */}
-      <CattleDocuments cattleId={cattle._id || cattle.id} existingDocuments={cattle.documents || []} />
+      <div className="no-print">
+         <CattleDocuments cattleId={cattle._id || cattle.id} existingDocuments={cattle.documents || []} />
+      </div>
 
       {/* Footer actions */}
-      <div className="flex items-center justify-between pt-4 border-t border-[#E8E6DE] dark:border-slate-700/40 mt-6">
+      <div className="flex items-center justify-between pt-4 border-t border-[#E8E6DE] dark:border-slate-700/40 mt-6 no-print">
         {onEdit && <Button variant="secondary" size="sm" onClick={onEdit}>✏️ তথ্য এডিট করুন</Button>}
         <Button variant="outline" size="sm" onClick={handleExportPDF}>📄 PDF ডাউনলোড</Button>
       </div>
