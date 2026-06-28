@@ -7,11 +7,11 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "icons/*.png"],
+      includeAssets: ["logo.png", "favicon.ico", "icons/*.png"],
       manifest: {
-        name: "স্মার্ট গবাদি ফার্ম ম্যানেজমেন্ট",
-        short_name: "গবাদি ফার্ম",
-        description: "পেশাদার ডেইরি ও ফ্যাটেনিং ফার্ম ব্যবস্থাপনা অ্যাপ",
+        name: "বাক্বারাহ এগ্রো | BAQARAH AGRO",
+        short_name: "BAQARAH AGRO",
+        description: "বাক্বারাহ এগ্রো - আধুনিক ও স্মার্ট ফার্ম ম্যানেজমেন্ট সলিউশন",
         theme_color: "#f59e0b",
         background_color: "#080c18",
         display: "standalone",
@@ -21,17 +21,17 @@ export default defineConfig({
         lang: "bn",
         icons: [
           {
-            src: "icons/icon-192.png",
+            src: "logo.png",
             sizes: "192x192",
             type: "image/png",
             purpose: "any maskable",
           },
           {
-            src: "icons/icon-512.png",
+            src: "logo.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "any maskable",
-          },
+          }
         ],
       },
       workbox: {
