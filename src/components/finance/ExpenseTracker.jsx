@@ -37,7 +37,6 @@ export default function ExpenseTracker() {
   const [deleteInc,   setDeleteInc]   = useState(null);
   const [incForm,     setIncForm]     = useState(EMPTY_INC);
 
-  // ── Shareholder Fund States ──
   const [showFundForm, setShowFundForm] = useState(false);
   const [editFund,     setEditFund]     = useState(null);
   const [deleteFundTarget, setDeleteFundTarget] = useState(null);
@@ -48,7 +47,6 @@ export default function ExpenseTracker() {
   const canEdit   = hasAccess("worker");
   const canDelete = hasAccess("admin");
 
-  // Search Highlight Detection
   useEffect(() => {
     const id = sessionStorage.getItem("searchHighlightId");
     if (id) {
@@ -87,11 +85,10 @@ export default function ExpenseTracker() {
 
   const saveFund = () => {
     const d = { ...fundForm, amount: Number(fundForm.amount) };
-    // Fallback: If addFund isn't available in context yet, we'll log it
     if(typeof addFund === 'function') {
         editFund ? updateFund(editFund._id || editFund.id, d) : addFund(d);
     } else {
-        alert("Backend connection for funds is pending in AppContext!");
+        alert("Backend connection for funds is pending!");
     }
     closeFund();
   };
@@ -111,9 +108,14 @@ export default function ExpenseTracker() {
       return names[method] || method;
   };
 
-  // Safe fallback if funds array doesn't exist yet
+  // ── 💡 ডায়নামিক হিসাব (Dynamic Calculations) ──
   const safeFunds = Array.isArray(funds) ? funds : [];
   const totalFunds = safeFunds.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
+  const totalIncome = stats.monthlyIncome || 0;
+  const totalExpense = stats.monthlyExpense || 0;
+  
+  // বর্তমান ব্যালেন্স = (মোট ফান্ড + মোট আয়) - মোট ব্যয়
+  const currentBalance = (totalFunds + totalIncome) - totalExpense;
 
   return (
     <div className="space-y-4">
@@ -128,32 +130,40 @@ export default function ExpenseTracker() {
             <Button variant="secondary" size="sm" onClick={() => setShowIncForm(true)}>+ {t("income")}</Button>
             <Button size="sm" onClick={() => setShowExpForm(true)}>+ {t("expense")}</Button>
             {tab === "fund" && hasAccess("admin") && (
-                <Button size="sm" className="bg-sky-600 hover:bg-sky-700" onClick={() => setShowFundForm(true)}>+ {language === "bn" ? "ফান্ড যুক্ত করুন" : "Add Fund"}</Button>
+                <Button size="sm" className="bg-sky-600 hover:bg-sky-700 border-none" onClick={() => setShowFundForm(true)}>+ {language === "bn" ? "ফান্ড যুক্ত করুন" : "Add Fund"}</Button>
             )}
           </div>
         )}
       </div>
 
-      {/* Summary Cards */}
+      {/* ── 💡 স্মার্ট ডায়নামিক সামারি কার্ডস ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-2">
-        <div className="bg-[#FFFFFF] dark:bg-slate-800/40 border border-[#10B981]/30 dark:border-emerald-500/20 shadow-sm rounded-xl p-3 text-center min-w-0 flex flex-col justify-center transition-colors">
-          <p className="text-[#64748B] dark:text-slate-400 text-[11px] sm:text-xs mb-1 truncate transition-colors" title={t("monthlyIncome")}>{t("monthlyIncome")}</p>
-          <p className="text-base sm:text-xl font-bold text-[#10B981] dark:text-emerald-400 truncate transition-colors">৳{fmt(stats.monthlyIncome)}</p>
-        </div>
-        <div className="bg-[#FFFFFF] dark:bg-slate-800/40 border border-[#EF4444]/30 dark:border-red-500/20 shadow-sm rounded-xl p-3 text-center min-w-0 flex flex-col justify-center transition-colors">
-          <p className="text-[#64748B] dark:text-slate-400 text-[11px] sm:text-xs mb-1 truncate transition-colors" title={t("monthlyExpense")}>{t("monthlyExpense")}</p>
-          <p className="text-base sm:text-xl font-bold text-[#EF4444] dark:text-red-400 truncate transition-colors">৳{fmt(stats.monthlyExpense)}</p>
-        </div>
-        <div className="bg-[#FFFFFF] dark:bg-slate-800/40 border border-[#F59E0B]/30 dark:border-amber-500/20 shadow-sm rounded-xl p-3 text-center min-w-0 flex flex-col justify-center transition-colors">
-          <p className="text-[#64748B] dark:text-slate-400 text-[11px] sm:text-xs mb-1 truncate transition-colors" title={t("netProfit")}>{t("netProfit")}</p>
-          <p className={`text-base sm:text-xl font-bold truncate transition-colors ${stats.netProfit >= 0 ? "text-[#F59E0B] dark:text-amber-400" : "text-[#EF4444] dark:text-red-400"}`}>৳{fmt(stats.netProfit)}</p>
+        {/* 1. মোট আয় */}
+        <div className="bg-[#FFFFFF] dark:bg-slate-800/40 border border-[#10B981]/30 dark:border-emerald-500/20 shadow-sm rounded-xl p-3 text-center flex flex-col justify-center transition-colors">
+          <p className="text-[#64748B] dark:text-slate-400 text-[11px] sm:text-xs font-bold mb-1 uppercase tracking-wider">{language === "bn" ? "মোট আয়" : "Total Income"}</p>
+          <p className="text-lg sm:text-xl font-bold text-[#10B981] dark:text-emerald-400 truncate">৳{fmt(totalIncome)}</p>
         </div>
         
-        {/* ── New Total Fund Card ── */}
-        <div className="bg-gradient-to-br from-sky-50 to-indigo-50 dark:from-sky-900/20 dark:to-indigo-900/20 border border-sky-200 dark:border-sky-500/30 shadow-sm rounded-xl p-3 text-center min-w-0 flex flex-col justify-center transition-colors relative overflow-hidden">
+        {/* 2. মোট ব্যয় */}
+        <div className="bg-[#FFFFFF] dark:bg-slate-800/40 border border-[#EF4444]/30 dark:border-red-500/20 shadow-sm rounded-xl p-3 text-center flex flex-col justify-center transition-colors">
+          <p className="text-[#64748B] dark:text-slate-400 text-[11px] sm:text-xs font-bold mb-1 uppercase tracking-wider">{language === "bn" ? "মোট ব্যয়" : "Total Expense"}</p>
+          <p className="text-lg sm:text-xl font-bold text-[#EF4444] dark:text-red-400 truncate">৳{fmt(totalExpense)}</p>
+        </div>
+        
+        {/* 3. মোট ফান্ড (মূলধন) */}
+        <div className="bg-gradient-to-br from-sky-50 to-indigo-50 dark:from-sky-900/20 dark:to-indigo-900/20 border border-sky-200 dark:border-sky-500/30 shadow-sm rounded-xl p-3 text-center relative overflow-hidden transition-colors">
           <div className="absolute top-0 right-0 p-2 opacity-10 text-2xl">🏦</div>
-          <p className="text-sky-700/80 dark:text-sky-300/80 text-[11px] sm:text-xs font-bold mb-1 truncate uppercase tracking-widest">{language === "bn" ? "মোট ফান্ড কালেকশন" : "Total Funds"}</p>
-          <p className="text-lg sm:text-2xl font-extrabold text-sky-600 dark:text-sky-400 truncate drop-shadow-sm">৳{fmt(totalFunds)}</p>
+          <p className="text-sky-700/80 dark:text-sky-400/80 text-[11px] sm:text-xs font-bold mb-1 uppercase tracking-wider">{language === "bn" ? "মোট ফান্ড (মূলধন)" : "Total Funds"}</p>
+          <p className="text-lg sm:text-xl font-bold text-sky-600 dark:text-sky-300 truncate">৳{fmt(totalFunds)}</p>
+        </div>
+        
+        {/* 4. বর্তমান ব্যালেন্স (ক্যাশ ইন হ্যান্ড) */}
+        <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-500/30 shadow-sm rounded-xl p-3 text-center relative overflow-hidden transition-colors">
+          <div className="absolute top-0 right-0 p-2 opacity-10 text-2xl">💰</div>
+          <p className="text-amber-700/80 dark:text-amber-400/80 text-[11px] sm:text-xs font-bold mb-1 uppercase tracking-wider">{language === "bn" ? "বর্তমান ব্যালেন্স" : "Available Balance"}</p>
+          <p className={`text-xl sm:text-2xl font-extrabold truncate drop-shadow-sm ${currentBalance >= 0 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"}`}>
+            ৳{fmt(currentBalance)}
+          </p>
         </div>
       </div>
 
