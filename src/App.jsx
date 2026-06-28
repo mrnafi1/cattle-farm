@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AppProvider } from "./contexts/AppContext";
@@ -9,10 +10,11 @@ import DairyLog from "./components/dairy/DairyLog";
 import ExpenseTracker from "./components/finance/ExpenseTracker";
 import ReportView from "./components/reports/ReportView";
 import UserManagement from "./components/settings/UserManagement";
-import Settings from "./components/settings/Settings"; // নতুন সেটিংস পেজ ইমপোর্ট করা হলো
+import Settings from "./components/settings/Settings";
 import Modal from "./components/ui/Modal";
 import AddCattleForm from "./components/cattle/AddCattleForm";
 import FeedInventory from "./components/inventory/FeedInventory";
+import PWAInstallBanner from "./components/ui/PWAInstallBanner";
 
 // ── Login Screen ─────────────────────────────────────────────────
 function LoginScreen() {
@@ -121,14 +123,22 @@ function AppShell() {
   const { currentUser, hasAccess } = useAuth();
   const { language } = useLanguage();
   
+  // ১. LocalStorage বা URL থেকে পেজ মনে রাখা (QR Code এর জন্য আপডেট করা লজিক)
   const [activePage, setActivePage] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("viewCattle")) return "cattle"; // যদি স্ক্যান করে আসে, তাহলে গরুর লিস্ট পেজে যাবে
+
     return localStorage.getItem("cattleFarmActivePage") || "dashboard";
   });
 
+  // ২. রিলোড ও Pull-to-refresh বন্ধ করা
   useEffect(() => {
     localStorage.setItem("cattleFarmActivePage", activePage);
     document.body.style.overscrollBehaviorY = 'none';
-    return () => { document.body.style.overscrollBehaviorY = 'auto'; };
+    
+    return () => {
+      document.body.style.overscrollBehaviorY = 'auto';
+    };
   }, [activePage]);
 
   const [showAddCattle, setShowAddCattle] = useState(false);
@@ -137,15 +147,16 @@ function AppShell() {
 
   if (!currentUser) return <LoginScreen />;
 
+  // পেজ রাউটিং
   const pages = {
-    dashboard: <Dashboard />,
-    cattle:    <CattleList />,
-    dairy:     <DairyLog showAddModal={showAddMilk}   onCloseAddModal={() => setShowAddMilk(false)} />,
-    feed:      <FeedInventory />, 
-    finance:   <ExpenseTracker showAddModal={showAddExp} onCloseAddModal={() => setShowAddExp(false)} />,
-    reports:   <ReportView />,
-    users:     hasAccess("admin") ? <UserManagement /> : <Dashboard />, // নতুন Users পেজ
-    settings:  hasAccess("admin") ? <Settings /> : <Dashboard />, // নতুন Settings পেজ
+    dashboard:  <Dashboard />,
+    cattle:     <CattleList />,
+    dairy:      <DairyLog showAddModal={showAddMilk}   onCloseAddModal={() => setShowAddMilk(false)} />,
+    feed:       <FeedInventory />, 
+    finance:    <ExpenseTracker showAddModal={showAddExp} onCloseAddModal={() => setShowAddExp(false)} />,
+    reports:    <ReportView />,
+    users:      hasAccess("admin") ? <UserManagement /> : <Dashboard />, 
+    settings:   hasAccess("admin") ? <Settings /> : <Dashboard />, 
   };
 
   return (
@@ -165,6 +176,9 @@ function AppShell() {
       <Modal isOpen={showAddCattle} onClose={() => setShowAddCattle(false)} title={language === "bn" ? "নতুন গরু যুক্ত করুন" : "Add New Cattle"} size="md">
         <AddCattleForm onClose={() => setShowAddCattle(false)} />
       </Modal>
+
+      {/* PWA ইন্সটলেশন প্রম্পট ব্যানার */}
+      <PWAInstallBanner />
     </MainLayout>
   );
 }

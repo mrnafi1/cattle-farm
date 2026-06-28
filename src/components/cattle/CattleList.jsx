@@ -62,7 +62,21 @@ export default function CattleList() {
       setIsLoading(false);
     }
   }, [cattle]);
-
+// QR Code স্ক্যান করে আসলে অটোমেটিক প্রোফাইল ওপেন করার লজিক
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const viewId = params.get("viewCattle");
+    
+    if (viewId && cattle && cattle.length > 0) {
+      // আইডি মিলিয়ে গরুটিকে খুঁজে বের করা
+      const targetCattle = cattle.find(c => String(c._id) === viewId || String(c.id) === viewId);
+      if (targetCattle) {
+        setSelectedCattle(targetCattle); // প্রোফাইল ওপেন করা
+        // URL থেকে স্ক্যানিং ট্যাগ সরিয়ে ফেলা (যাতে রিফ্রেশ দিলে বারবার ওপেন না হয়)
+        window.history.replaceState(null, "", window.location.pathname);
+      }
+    }
+  }, [cattle]);
   useEffect(() => {
     const id = sessionStorage.getItem("searchHighlightId");
     if (id) {

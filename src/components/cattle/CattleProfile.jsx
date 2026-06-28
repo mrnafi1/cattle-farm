@@ -89,8 +89,12 @@ export default function CattleProfile({ cattle, onEdit }) {
   };
 
   // QR Code URL (গুগল চার্ট এপিআই দিয়ে জেনারেট করা, যা লাইভ কাজ করবে)
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(cattle.tagId || cattle.id)}`;
-
+ // বর্তমান ওয়েবসাইটের লিংকের সাথে গরুর আইডি জুড়ে দেওয়া
+  const appUrl = window.location.origin; 
+  const profileLink = `${appUrl}/?viewCattle=${cattle._id || cattle.id}`;
+  
+  // সেই লিংকের QR কোড জেনারেট করা
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(profileLink)}`;
   // প্রেগনেন্সি দিন গণনা
   const getDeliveryDaysLeft = () => {
     if (!cattle.breedingInfo?.expectedDelivery || cattle.breedingInfo?.status !== "positive") return null;
