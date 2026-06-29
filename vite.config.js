@@ -21,13 +21,13 @@ export default defineConfig({
         lang: "bn",
         icons: [
           {
-            src: "logo.png",
+            src: "icons/logo-512.png", // আপডেট করা হয়েছে
             sizes: "192x192",
             type: "image/png",
             purpose: "any maskable",
           },
           {
-            src: "logo.png",
+            src: "icons/logo-512.png", // আপডেট করা হয়েছে
             sizes: "512x512",
             type: "image/png",
             purpose: "any maskable",
@@ -35,9 +35,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // Cache all static assets
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
-        // Runtime caching strategy
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
