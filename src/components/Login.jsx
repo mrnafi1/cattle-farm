@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAuth } from "../../contexts/AuthContext"; // পাথটি আপনার ফোল্ডার অনুযায়ী ঠিক করে নিবেন
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function Login() {
   const { login, authError } = useAuth();
@@ -32,12 +32,16 @@ export default function Login() {
 
       {/* মূল লগইন কার্ড */}
       <div className="relative w-full max-w-md bg-slate-800/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 shadow-2xl">
+        
+        {/* ── লোগো ও টাইটেল সেকশন (আপডেট করা হয়েছে) ── */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-amber-500/10 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl border border-amber-500/20">
-            🐄
-          </div>
-          <h2 className="text-2xl font-bold text-white mb-1">খামার ব্যবস্থাপনা</h2>
-          <p className="text-sm text-slate-400">নিরাপদে আপনার অ্যাকাউন্টে প্রবেশ করুন</p>
+          <img 
+            src="/icons/logo-512.png" 
+            alt="Baqarah Agro Logo" 
+            className="w-24 h-24 mx-auto mb-4 object-contain drop-shadow-lg"
+          />
+          <h2 className="text-3xl font-bold text-white mb-2">বাক্বারাহ এগ্রো</h2>
+          <p className="text-sm text-slate-300">✨ আধুনিক ও স্মার্ট খামার ব্যবস্থাপনা</p>
         </div>
 
         {/* ট্যাব বাটন */}
@@ -60,7 +64,7 @@ export default function Login() {
           </button>
         </div>
 
-        {/* এরর মেসেজ দেখানোর জায়গা */}
+        {/* এরর মেসেজ দেখানোর জায়গা */}
         {authError && (
           <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-center text-red-400 text-sm animate-pulse">
             {authError}
